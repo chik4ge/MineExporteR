@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "mine-exporter",
+    "name": "MineExporteR",
+    "description": "",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": [],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
