@@ -1,6 +1,6 @@
 [
   {
-    "modid": "mine-exporter",
+    "modid": "mineexporter",
     "name": "MineExporteR",
     "description": "",
     "version": "${version}",
