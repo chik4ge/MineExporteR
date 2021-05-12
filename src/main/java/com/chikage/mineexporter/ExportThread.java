@@ -1,6 +1,9 @@
 package com.chikage.mineexporter;
 
 import com.chikage.mineexporter.utils.Range;
+import de.javagl.obj.Obj;
+import de.javagl.obj.ObjWriter;
+import de.javagl.obj.Objs;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockModelShapes;
@@ -8,9 +11,13 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
+import org.apache.commons.lang3.ArrayUtils;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class ExportThread extends Thread {
@@ -28,8 +35,10 @@ public class ExportThread extends Thread {
 
     public void run() {
         BlockModelShapes bms = Minecraft.getMinecraft().getBlockRendererDispatcher().getBlockModelShapes();
+        Obj obj = Objs.create();
+        int faceindex = 0;
+
         for (BlockPos pos: new Range(pos1, pos2)) {
-            sender.sendMessage(new TextComponentString(pos.toString()));
             IBlockState state = sender.getEntityWorld().getBlockState(pos);
             IBakedModel model = bms.getModelForState(state);
 
@@ -46,9 +55,47 @@ public class ExportThread extends Thread {
 //            6...法線ベクトル(Byte*3) + あまり8bit
 
 //            TODO TileEntityは正常に描画されない
-            for (BakedQuad quad: model.getQuads(state, null, 0)) {
-                sender.sendMessage(new TextComponentString(Arrays.toString(quad.getVertexData())));
+            for (EnumFacing facing : ArrayUtils.addAll(EnumFacing.VALUES, new EnumFacing[]{null})) {
+                for (BakedQuad quad : model.getQuads(state, facing, 0)) {
+                    int[] vData = quad.getVertexData();
+                    for (int i = 0; i < 4; i++) { //objで三角タイプもあるかも
+                        int index = i * 7;
+
+                        float x = Float.intBitsToFloat(vData[index]);
+                        float y = Float.intBitsToFloat(vData[index + 1]);
+                        float z = Float.intBitsToFloat(vData[index + 2]);
+
+                        float u = Float.intBitsToFloat(vData[index + 4]);
+                        float v = Float.intBitsToFloat(vData[index + 5]);
+
+                        int nv = vData[index + 6];
+                        float nx = (byte) ((nv) & 0xFF) / 127.0F;
+                        float ny = (byte) ((nv >> 8) & 0xFF) / 127.0F;
+                        float nz = (byte) ((nv >> 16) & 0xFF) / 127.0F;
+
+                        obj.addVertex(x, y, z);
+                        obj.addNormal(nx, ny, nz);
+                    }
+                    obj.addFaceWithNormals(4 * faceindex, 4 * faceindex + 1, 4 * faceindex + 2, 4 * faceindex + 3);
+                    faceindex += 1;
+                }
             }
+        }
+
+        File file = new File("MineExporteR/export.obj");
+        try {
+            OutputStream output = new FileOutputStream(file);
+            ObjWriter.write(obj, output);
+    //
+    //                byte sbyte[] = "Java".getBytes(StandardCharsets.UTF_8);
+    //
+    //                for(int i = 0; i < sbyte.length; i++){
+    //                    output.write(sbyte[i]);
+    //                }
+
+            output.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

@@ -14,6 +14,11 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 @Mod(
         modid = Main.MOD_ID,
         name = Main.MOD_NAME,
@@ -47,6 +52,15 @@ public class Main {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         ClientCommandHandler.instance.registerCommand(new CommandMexp());
+
+        Path path = Paths.get("MineExporteR");
+        if (!Files.exists(path)) {
+            try {
+                Files.createDirectory(path);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
