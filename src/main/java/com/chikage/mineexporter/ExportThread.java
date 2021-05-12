@@ -38,7 +38,13 @@ public class ExportThread extends Thread {
         Obj obj = Objs.create();
         int faceindex = 0;
 
-        for (BlockPos pos: new Range(pos1, pos2)) {
+        Range range = new Range(pos1, pos2);
+
+        for (BlockPos pos: range) {
+            int xOffset = pos.getX() - range.getMinX();
+            int yOffset = pos.getY() - range.getMinY();
+            int zOffset = pos.getZ() - range.getMinZ();
+
             IBlockState state = sender.getEntityWorld().getBlockState(pos);
             IBlockState aState = state.getActualState(sender.getEntityWorld(), pos);
             IBakedModel model = bms.getModelForState(aState);
@@ -62,9 +68,9 @@ public class ExportThread extends Thread {
                     for (int i = 0; i < 4; i++) { //objで三角タイプもあるかも
                         int index = i * 7;
 
-                        float x = Float.intBitsToFloat(vData[index]);
-                        float y = Float.intBitsToFloat(vData[index + 1]);
-                        float z = Float.intBitsToFloat(vData[index + 2]);
+                        float x = Float.intBitsToFloat(vData[index]) + xOffset;
+                        float y = Float.intBitsToFloat(vData[index + 1]) + yOffset;
+                        float z = Float.intBitsToFloat(vData[index + 2]) + zOffset;
 
                         float u = Float.intBitsToFloat(vData[index + 4]);
                         float v = Float.intBitsToFloat(vData[index + 5]);
@@ -95,6 +101,7 @@ public class ExportThread extends Thread {
     //                }
 
             output.close();
+            sender.sendMessage(new TextComponentString("successfully exported."));
         } catch (IOException e) {
             e.printStackTrace();
         }
