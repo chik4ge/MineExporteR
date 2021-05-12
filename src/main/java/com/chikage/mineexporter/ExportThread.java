@@ -40,7 +40,8 @@ public class ExportThread extends Thread {
 
         for (BlockPos pos: new Range(pos1, pos2)) {
             IBlockState state = sender.getEntityWorld().getBlockState(pos);
-            IBakedModel model = bms.getModelForState(state);
+            IBlockState aState = state.getActualState(sender.getEntityWorld(), pos);
+            IBakedModel model = bms.getModelForState(aState);
 
 //            VertexDataの構造覚え書き
 //            基本的に28要素のint配列で保存
@@ -56,7 +57,7 @@ public class ExportThread extends Thread {
 
 //            TODO TileEntityは正常に描画されない
             for (EnumFacing facing : ArrayUtils.addAll(EnumFacing.VALUES, new EnumFacing[]{null})) {
-                for (BakedQuad quad : model.getQuads(state, facing, 0)) {
+                for (BakedQuad quad : model.getQuads(aState, facing, 0)) {
                     int[] vData = quad.getVertexData();
                     for (int i = 0; i < 4; i++) { //objで三角タイプもあるかも
                         int index = i * 7;
