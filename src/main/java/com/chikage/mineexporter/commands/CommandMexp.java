@@ -95,7 +95,7 @@ public class CommandMexp implements IClientCommand {
     private void setPos1(ICommandSender sender) {
         if (sender.getCommandSenderEntity() != null) {
             int x = (int) Math.floor(sender.getCommandSenderEntity().posX);
-            int y = (int) Math.floor(sender.getCommandSenderEntity().posY);
+            int y = (int) Math.floor(sender.getCommandSenderEntity().posY)-1;
             int z = (int) Math.floor(sender.getCommandSenderEntity().posZ);
             pos1 = new BlockPos(x, y, z);
             sender.sendMessage(new TextComponentString("pos1 set to (" + pos1.getX() + ", " + pos1.getY() + ", " + pos1.getZ() + ")"));
@@ -107,7 +107,7 @@ public class CommandMexp implements IClientCommand {
     private void setPos2(ICommandSender sender) {
         if (sender.getCommandSenderEntity() != null) {
             int x = (int) Math.floor(sender.getCommandSenderEntity().posX);
-            int y = (int) Math.floor(sender.getCommandSenderEntity().posY);
+            int y = (int) Math.floor(sender.getCommandSenderEntity().posY)-1;
             int z = (int) Math.floor(sender.getCommandSenderEntity().posZ);
             pos2 = new BlockPos(x, y, z);
             sender.sendMessage(new TextComponentString("pos2 set to (" + pos2.getX() + ", " + pos2.getY() + ", " + pos2.getZ() + ")"));
