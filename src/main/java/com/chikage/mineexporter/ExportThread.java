@@ -73,6 +73,12 @@ public class ExportThread extends Thread {
         //            TODO TileEntityは正常に描画されない
                 for (EnumFacing facing : ArrayUtils.addAll(EnumFacing.VALUES, new EnumFacing[]{null})) {
                     for (BakedQuad quad : model.getQuads(aState, facing, 0)) {
+                        TextureAtlasSprite sprite = quad.getSprite();
+                        String name = sprite.getIconName();
+                        if (name.split(":").length == 1) {
+                            continue;
+                        }
+
                         int textureWidth = quad.getSprite().getIconWidth();
                         int textureHeight = quad.getSprite().getIconHeight();
                         int[] vData = quad.getVertexData();
@@ -95,8 +101,8 @@ public class ExportThread extends Thread {
                             obj.addTexCoord(u, v);
                             obj.addNormal(nx, ny, nz);
                         }
-                        TextureAtlasSprite sprite = quad.getSprite();
-                        String name = sprite.getIconName();
+
+                        sender.sendMessage(new TextComponentString(name));
                         ResourceLocation location = new ResourceLocation(name.split(":")[0], "textures/"+name.split(":")[1]+".png");
                         String[] locationPath = location.getPath().split("/");
 
@@ -141,7 +147,7 @@ public class ExportThread extends Thread {
             mtlOutput.close();
             objOutput.close();
             sender.sendMessage(new TextComponentString("successfully exported."));
-        } catch (IOException e) {
+        } catch (Exception e) {
             sender.sendMessage(new TextComponentString(e.getMessage()));
             e.printStackTrace();
         }
