@@ -2,6 +2,7 @@ package com.chikage.mineexporter;
 
 import com.chikage.mineexporter.utils.Range;
 import de.javagl.obj.*;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockModelShapes;
@@ -13,6 +14,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -48,15 +50,30 @@ public class ExportThread extends Thread {
             int faceindex = 0;
 
             Range range = new Range(pos1, pos2);
+            int size = range.getSize();
+            int processed = 0;
+            boolean showed = false;
 
             for (BlockPos pos: range) {
-                int xOffset = pos.getX() - range.getMinX();
-                int yOffset = pos.getY() - range.getMinY();
-                int zOffset = pos.getZ() - range.getMinZ();
+                processed++;
+                if ((processed*100/size) % 10 == 0 && (processed*100/size) % 10 != 0 && !showed) {
+                    sender.sendMessage(new TextComponentString("processing " + (processed*100/size) + "%"));
+                    showed = true;
+                }else{
+                    showed = false;
+                }
 
                 IBlockState state = sender.getEntityWorld().getBlockState(pos);
                 IBlockState aState = state.getActualState(sender.getEntityWorld(), pos);
                 IBakedModel model = bms.getModelForState(aState);
+
+                Vec3d offset = aState.getOffset(sender.getEntityWorld(), pos);
+
+                double xOffset = pos.getX() - range.getMinX() + offset.x;
+                double yOffset = pos.getY() - range.getMinY() + offset.y;
+                double zOffset = pos.getZ() - range.getMinZ() + offset.z;
+
+//                sender.sendMessage(new TextComponentString(aState.getProperties().toString()));
 
         //            VertexDataの構造覚え書き
         //            基本的に28要素のint配列で保存
@@ -85,9 +102,9 @@ public class ExportThread extends Thread {
                         for (int i = 0; i < 4; i++) { //objで三角タイプもあるかも
                             int index = i * 7;
 
-                            float x = Float.intBitsToFloat(vData[index]) + xOffset;
-                            float y = Float.intBitsToFloat(vData[index + 1]) + yOffset;
-                            float z = Float.intBitsToFloat(vData[index + 2]) + zOffset;
+                            float x = (float) (Float.intBitsToFloat(vData[index]) + xOffset);
+                            float y = (float) (Float.intBitsToFloat(vData[index + 1]) + yOffset);
+                            float z = (float) (Float.intBitsToFloat(vData[index + 2]) + zOffset);
 
                             float u = (float) Math.round((quad.getSprite().getUnInterpolatedU((float) ((Float.intBitsToFloat(vData[index + 4]) - Float.intBitsToFloat(vData[(index+14)%21 + 4])*.001)/.999))/16.0)*textureWidth)/textureWidth;
                             float v = 1F-(float) Math.round((quad.getSprite().getUnInterpolatedV((float) ((Float.intBitsToFloat(vData[index + 5]) - Float.intBitsToFloat(vData[(index+14)%21 + 5])*.001)/.999))/16.0)*textureHeight)/textureHeight;
@@ -102,7 +119,6 @@ public class ExportThread extends Thread {
                             obj.addNormal(nx, ny, nz);
                         }
 
-                        sender.sendMessage(new TextComponentString(name));
                         ResourceLocation location = new ResourceLocation(name.split(":")[0], "textures/"+name.split(":")[1]+".png");
                         String[] locationPath = location.getPath().split("/");
 
@@ -148,6 +164,7 @@ public class ExportThread extends Thread {
             objOutput.close();
             sender.sendMessage(new TextComponentString("successfully exported."));
         } catch (Exception e) {
+            sender.sendMessage(new TextComponentString("error occurred."));
             sender.sendMessage(new TextComponentString(e.getMessage()));
             e.printStackTrace();
         }
