@@ -78,4 +78,8 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
     public int getMinZ() {
         return minZ;
     }
+
+    public int getSize() {
+        return size;
+    }
 }
