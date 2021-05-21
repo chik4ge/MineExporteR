@@ -1,14 +1,16 @@
 package com.chikage.mineexporter;
 
+import com.chikage.mineexporter.ctm.CTMContext;
+import com.chikage.mineexporter.ctm.CTMHandler;
 import com.chikage.mineexporter.utils.Range;
 import de.javagl.obj.*;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockModelShapes;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.IResourceManager;
+import net.minecraft.client.resources.ResourcePackRepository;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumFacing;
@@ -44,6 +46,8 @@ public class ExportThread extends Thread {
 
     public void run(){
         try {
+            IResourceManager resourceManager = getMinecraft().getResourceManager();
+            ResourcePackRepository rpRep = getMinecraft().getResourcePackRepository();
             BlockModelShapes bms = getMinecraft().getBlockRendererDispatcher().getBlockModelShapes();
             Obj obj = Objs.create();
             List<Mtl> mtls = new ArrayList<>();
@@ -53,6 +57,8 @@ public class ExportThread extends Thread {
             int size = range.getSize();
             int processed = 0;
             boolean showed = false;
+
+            CTMHandler ctmHandler = new CTMHandler(resourceManager, rpRep);
 
             for (BlockPos pos: range) {
                 processed++;
@@ -99,7 +105,7 @@ public class ExportThread extends Thread {
                         int textureWidth = quad.getSprite().getIconWidth();
                         int textureHeight = quad.getSprite().getIconHeight();
                         int[] vData = quad.getVertexData();
-                        for (int i = 0; i < 4; i++) { //objで三角タイプもあるかも
+                        for (int i = 0; i < 4; i++) {
                             int index = i * 7;
 
                             float x = (float) (Float.intBitsToFloat(vData[index]) + xOffset);
@@ -119,10 +125,26 @@ public class ExportThread extends Thread {
                             obj.addNormal(nx, ny, nz);
                         }
 
+                        String[] filenames = name.split("/");
+                        String filename = filenames[filenames.length-1];
                         ResourceLocation location = new ResourceLocation(name.split(":")[0], "textures/"+name.split(":")[1]+".png");
-                        String[] locationPath = location.getPath().split("/");
 
-                        InputStream textureInputStream = Minecraft.getMinecraft().getResourceManager().getResource(location).getInputStream();
+//                        ctm handling
+                        if (ctmHandler.hasCTMProperty(filename)) {
+                            CTMContext ctx = new CTMContext(sender.getEntityWorld(), quad, pos);
+                            String ctmPath = ctmHandler.getCTMPath(filename, ctx);
+
+                            if (ctmPath != null) {
+                                name = ctmPath;
+                                filenames = ctmPath.split("/");
+                                filename = filenames[filenames.length-1];
+                                location = new ResourceLocation(name + ".png");
+                            }
+                        }
+
+                        String[] locationPath = location.getPath().split("/");
+                        InputStream textureInputStream = resourceManager.getResource(location).getInputStream();
+//                        getMinecraft().getResourcePackRepository().getDirResourcepacks();
 
                         Path textureDirectory = Paths.get(
                                 "MineExporteR/assets/" + location.getNamespace() + "\\" +
@@ -138,7 +160,7 @@ public class ExportThread extends Thread {
 
                         textureInputStream.close();
 
-                        String[] mtlNamelst = name.split(":|/");
+                        String[] mtlNamelst = filename.split(":|/");
                         String mtlName = mtlNamelst[mtlNamelst.length-1];
                         if (!mtls.stream().map(m -> m.getName()).collect(Collectors.toList()).contains(mtlName)) {
                             Mtl mtl = Mtls.create(mtlName);
@@ -165,7 +187,9 @@ public class ExportThread extends Thread {
             sender.sendMessage(new TextComponentString("successfully exported."));
         } catch (Exception e) {
             sender.sendMessage(new TextComponentString("error occurred."));
-            sender.sendMessage(new TextComponentString(e.getMessage()));
+            for (StackTraceElement trace: e.getStackTrace()) {
+                sender.sendMessage(new TextComponentString(trace.toString()));
+            }
             e.printStackTrace();
         }
     }
