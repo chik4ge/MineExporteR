@@ -1,9 +1,7 @@
 package com.chikage.mineexporter.ctm;
 
-import java.nio.file.Path;
-
-public class PropertyHorizontal extends CTMProperty{
-    public PropertyHorizontal(String path) {
+public class MethodHorizontal extends CTMProperty{
+    public MethodHorizontal(String path) {
         super(path);
     }
 

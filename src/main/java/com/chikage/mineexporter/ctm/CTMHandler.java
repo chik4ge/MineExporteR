@@ -3,8 +3,6 @@ package com.chikage.mineexporter.ctm;
 import com.chikage.mineexporter.Main;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.ResourcePackRepository;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -83,7 +81,7 @@ public class CTMHandler {
                 break;
 
             case "horizontal":
-                result = new PropertyHorizontal(path);
+                result = new MethodHorizontal(path);
                 break;
 
             case "vertical":
