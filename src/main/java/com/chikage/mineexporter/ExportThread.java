@@ -95,6 +95,8 @@ public class ExportThread extends Thread {
 
         //            TODO TileEntityは正常に描画されない
                 for (EnumFacing facing : ArrayUtils.addAll(EnumFacing.VALUES, new EnumFacing[]{null})) {
+                    if (facing != null && !aState.shouldSideBeRendered(sender.getEntityWorld(), pos, facing)) continue;
+
                     for (BakedQuad quad : model.getQuads(aState, facing, 0)) {
                         TextureAtlasSprite sprite = quad.getSprite();
                         String name = sprite.getIconName();
@@ -187,6 +189,7 @@ public class ExportThread extends Thread {
             sender.sendMessage(new TextComponentString("successfully exported."));
         } catch (Exception e) {
             sender.sendMessage(new TextComponentString("error occurred."));
+            sender.sendMessage(new TextComponentString(e.getClass().getName() + ": " + e.getMessage()));
             for (StackTraceElement trace: e.getStackTrace()) {
                 sender.sendMessage(new TextComponentString(trace.toString()));
             }
