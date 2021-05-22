@@ -24,7 +24,7 @@ public class CTMHandler {
 
     Map<String, CTMProperty> locationCache = new HashMap<>();
 
-    String ctmDir = "mcpatcher/ctm";
+    String ctmDir = "assets/mcpatcher/ctm";
 
     public CTMHandler(IResourceManager resourceManager, ResourcePackRepository rpRep) {
         this.resourceManager = resourceManager;
@@ -43,7 +43,7 @@ public class CTMHandler {
                     ZipFile zipfile = new ZipFile(file);
                     ZipEntry entry;
                     while ((entry = zis.getNextEntry()) != null) {
-                        if (entry.isDirectory() || !entry.getName().endsWith(".properties")) {
+                        if (entry.isDirectory() || !entry.getName().endsWith(".properties") || entry.getName().startsWith(ctmDir)) {
                             continue;
                         }
 //                        remove ".properties"
@@ -71,7 +71,6 @@ public class CTMHandler {
         properties.load(stream);
 
         String method = properties.getProperty("method");
-        if (method == null) return null;
 
         switch(method) {
             case "ctm":
