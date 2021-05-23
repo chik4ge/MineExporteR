@@ -18,6 +18,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.*;
@@ -186,12 +187,12 @@ public class ExportThread extends Thread {
             MtlWriter.write(mtls, mtlOutput);
             mtlOutput.close();
             objOutput.close();
-            sender.sendMessage(new TextComponentString("successfully exported."));
+            sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "successfully exported."));
         } catch (Exception e) {
-            sender.sendMessage(new TextComponentString("error occurred."));
-            sender.sendMessage(new TextComponentString(e.getClass().getName() + ": " + e.getMessage()));
+            sender.sendMessage(new TextComponentString(TextFormatting.RED + "An error has occurred during export process!"));
+            sender.sendMessage(new TextComponentString(TextFormatting.RED + e.getClass().getName() + ": " + e.getMessage()));
             for (StackTraceElement trace: e.getStackTrace()) {
-                sender.sendMessage(new TextComponentString(trace.toString()));
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + trace.toString()));
             }
             e.printStackTrace();
         }

@@ -72,8 +72,14 @@ public class CTMHandler {
 
         String method = properties.getProperty("method");
 
+        if (method == null) {
+            Main.logger.error("unexpexted null method: " + path);
+            return null;
+        }
+
         switch(method) {
             case "ctm":
+                result = new MethodCTM(path);
                 break;
 
             case "ctm_compact":
@@ -200,7 +206,7 @@ public class CTMHandler {
     }
 
     public boolean hasCTMProperty(String texName) {
-        return this.locationCache.containsKey(texName);
+        return locationCache.containsKey(texName) && locationCache.get(texName) != null;
     }
 
     public String getCTMPath(String texName, CTMContext ctx) {
