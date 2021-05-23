@@ -1,12 +1,14 @@
-package com.chikage.mineexporter.ctm;
+package com.chikage.mineexporter.ctm.method;
 
-public class MethodHorizontal extends CTMProperty{
+import com.chikage.mineexporter.ctm.CTMContext;
+
+public class MethodHorizontal extends CTMMethod {
     public MethodHorizontal(String path) {
         super(path);
     }
 
     @Override
-    String getTile(CTMContext ctx) {
+    public String getTile(CTMContext ctx) {
         boolean isPUConnected = ctx.shouldConnectTo(this, 1, 0);
         boolean isNUConnected = ctx.shouldConnectTo(this, -1, 0);
 

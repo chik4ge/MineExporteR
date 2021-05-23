@@ -1,5 +1,6 @@
-package com.chikage.mineexporter.ctm;
+package com.chikage.mineexporter.ctm.method;
 
+import com.chikage.mineexporter.ctm.CTMContext;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -13,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public abstract class CTMProperty {
+public abstract class CTMMethod {
     public String directoryPath;
 
     public List<String> tiles;
@@ -27,9 +28,9 @@ public abstract class CTMProperty {
     public int maxHeight = 255;
     public String name = null;
 
-    public CTMProperty(String path) {
+    public CTMMethod(String path) {
         this.directoryPath = path;
     }
 
-    abstract String getTile(CTMContext ctx);
+    public abstract String getTile(CTMContext ctx);
 }
