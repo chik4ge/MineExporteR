@@ -1,6 +1,7 @@
 package com.chikage.mineexporter.ctm;
 
 import com.chikage.mineexporter.Main;
+import com.chikage.mineexporter.ctm.method.*;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.ResourcePackRepository;
 
@@ -22,7 +23,7 @@ public class CTMHandler {
     IResourceManager resourceManager;
     ResourcePackRepository rpRep;
 
-    Map<String, CTMProperty> locationCache = new HashMap<>();
+    Map<String, CTMMethod> locationCache = new HashMap<>();
 
     String ctmDir = "assets/mcpatcher/ctm";
 
@@ -64,8 +65,8 @@ public class CTMHandler {
         }
     }
 
-    private CTMProperty getCTMProperty(InputStream stream, String path) throws IOException {
-        CTMProperty result = null;
+    private CTMMethod getCTMProperty(InputStream stream, String path) throws IOException {
+        CTMMethod result = null;
 
         Properties properties = new Properties();
         properties.load(stream);
@@ -90,21 +91,32 @@ public class CTMHandler {
                 break;
 
             case "vertical":
+                result = new MethodVertical(path);
                 break;
 
             case "horizontal+vertical":
+                result = new MethodHorizontalVertical(path);
                 break;
 
             case "vertical+horizontal":
+                result = new MethodVerticalHorizontal(path);
                 break;
 
             case "top":
                 break;
 
             case "random":
+                result = new MethodRandom(path);
                 break;
 
             case "repeat":
+                result = new MethodRepeat(path);
+
+                int width = Integer.parseInt(properties.getProperty("width"));
+                int height = Integer.parseInt(properties.getProperty("height"));
+
+                ((MethodRepeat) result).width = width;
+                ((MethodRepeat) result).height = height;
                 break;
 
             case "fixed":
@@ -210,7 +222,7 @@ public class CTMHandler {
     }
 
     public String getCTMPath(String texName, CTMContext ctx) {
-        CTMProperty prop = locationCache.get(texName);
+        CTMMethod prop = locationCache.get(texName);
         return "minecraft:" + prop.directoryPath + "/" +prop.getTile(ctx);
     }
 

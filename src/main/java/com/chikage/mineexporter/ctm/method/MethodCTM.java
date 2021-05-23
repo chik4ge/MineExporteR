@@ -1,8 +1,9 @@
-package com.chikage.mineexporter.ctm;
+package com.chikage.mineexporter.ctm.method;
 
+import com.chikage.mineexporter.ctm.CTMContext;
 import org.apache.commons.lang3.BooleanUtils;
 
-public class MethodCTM extends CTMProperty{
+public class MethodCTM extends CTMMethod {
     public MethodCTM(String path) {
         super(path);
     }
@@ -37,7 +38,7 @@ public class MethodCTM extends CTMProperty{
 //    36 -> 0100 0000
 
     @Override
-    String getTile(CTMContext ctx) {
+    public String getTile(CTMContext ctx) {
         int isPUConnected = BooleanUtils.toInteger(ctx.shouldConnectTo(this, 1, 0));
         int isNUConnected = BooleanUtils.toInteger(ctx.shouldConnectTo(this, -1, 0));
         int isPVConnected = BooleanUtils.toInteger(ctx.shouldConnectTo(this, 0, 1));

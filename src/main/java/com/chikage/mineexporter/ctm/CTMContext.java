@@ -1,7 +1,7 @@
 package com.chikage.mineexporter.ctm;
 
+import com.chikage.mineexporter.ctm.method.CTMMethod;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.BlockStateBase;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.util.EnumFacing;
@@ -30,7 +30,7 @@ public class CTMContext {
     }
     
 //    wはテクスチャが貼ってある面を正とする
-    public boolean shouldConnectTo(CTMProperty prop, int uOffset, int vOffset, int wOffset) {
+    public boolean shouldConnectTo(CTMMethod prop, int uOffset, int vOffset, int wOffset) {
         IBlockState state = access.getBlockState(blockPos);
         IBlockState targetState = access.getBlockState(blockPos
                 .offset(uFacing, uOffset)
@@ -104,7 +104,40 @@ public class CTMContext {
         return EnumFacing.getFacingFromVector(resultX, resultY, resultZ);
     }
 
-    public boolean shouldConnectTo(CTMProperty prop, int uOffset, int vOffset) {
+    public boolean shouldConnectTo(CTMMethod prop, int uOffset, int vOffset) {
         return shouldConnectTo(prop, uOffset, vOffset, 0);
+    }
+
+    public int[] getUVIndexes(CTMMethod prop) {
+        int[] result = new int[2];
+
+        EnumFacing.Axis uAxis = uFacing.getAxis();
+        EnumFacing.Axis vAxis = vFacing.getAxis();
+
+        switch(uAxis) {
+            case X:
+                result[0] = blockPos.getX();
+                break;
+            case Y:
+                result[0] = blockPos.getY();
+                break;
+            case Z:
+                result[0] = blockPos.getZ();
+                break;
+        }
+
+        switch (vAxis) {
+            case X:
+                result[1] = blockPos.getX();
+                break;
+            case Y:
+                result[1] = blockPos.getY();
+                break;
+            case Z:
+                result[1] = blockPos.getZ();
+                break;
+        }
+
+        return result;
     }
 }
