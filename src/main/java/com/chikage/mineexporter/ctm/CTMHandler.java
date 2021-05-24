@@ -51,9 +51,10 @@ public class CTMHandler {
                         String name = entry.getName().substring(0, entry.getName().length()-11);
 
                         String directoryPath = String.join("/", Arrays.asList(name.split("/")).subList(2, name.split("/").length-1));
+                        String propertyName = name.split("/")[name.split("/").length-1];
 
                         InputStream entryInputStream = zipfile.getInputStream(entry);
-                        locationCache.put(name.split("/")[name.split("/").length-1], getCTMProperty(entryInputStream, directoryPath));
+                        locationCache.put(name.split("/")[name.split("/").length-1], getCTMProperty(entryInputStream, directoryPath, propertyName));
                         entryInputStream.close();
                     }
                 } catch (IOException e) {
@@ -65,7 +66,7 @@ public class CTMHandler {
         }
     }
 
-    private CTMMethod getCTMProperty(InputStream stream, String path) throws IOException {
+    private CTMMethod getCTMProperty(InputStream stream, String path, String propertyName) throws IOException {
         CTMMethod result = null;
 
         Properties properties = new Properties();
@@ -74,43 +75,43 @@ public class CTMHandler {
         String method = properties.getProperty("method");
 
         if (method == null) {
-            Main.logger.error("unexpexted null method: " + path);
+            Main.logger.error("unexpexted null method: " + path + "/" + propertyName);
             return null;
         }
 
         switch(method) {
             case "ctm":
-                result = new MethodCTM(path);
+                result = new MethodCTM(path, propertyName);
                 break;
 
             case "ctm_compact":
                 break;
 
             case "horizontal":
-                result = new MethodHorizontal(path);
+                result = new MethodHorizontal(path, propertyName);
                 break;
 
             case "vertical":
-                result = new MethodVertical(path);
+                result = new MethodVertical(path, propertyName);
                 break;
 
             case "horizontal+vertical":
-                result = new MethodHorizontalVertical(path);
+                result = new MethodHorizontalVertical(path, propertyName);
                 break;
 
             case "vertical+horizontal":
-                result = new MethodVerticalHorizontal(path);
+                result = new MethodVerticalHorizontal(path, propertyName);
                 break;
 
             case "top":
                 break;
 
             case "random":
-                result = new MethodRandom(path);
+                result = new MethodRandom(path, propertyName);
                 break;
 
             case "repeat":
-                result = new MethodRepeat(path);
+                result = new MethodRepeat(path, propertyName);
 
                 int width = Integer.parseInt(properties.getProperty("width"));
                 int height = Integer.parseInt(properties.getProperty("height"));
@@ -221,10 +222,17 @@ public class CTMHandler {
         return locationCache.containsKey(texName) && locationCache.get(texName) != null;
     }
 
-    public String getCTMPath(String texName, CTMContext ctx) {
+    public String getTilePath(String texName, int index) {
         CTMMethod prop = locationCache.get(texName);
-        return "minecraft:" + prop.directoryPath + "/" +prop.getTile(ctx);
+        return "minecraft:" + prop.directoryPath + "/" +prop.tiles.get(index) + ".png";
     }
 
+    public int getTileIndex(String texName, CTMContext ctx) {
+        CTMMethod prop = locationCache.get(texName);
+        return prop.getTileIndex(ctx);
+    }
 
+    public String getMethodName(String texName) {
+        return locationCache.get(texName).getMethodName();
+    }
 }

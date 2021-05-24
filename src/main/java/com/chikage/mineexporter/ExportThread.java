@@ -8,25 +8,22 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.BlockModelShapes;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.ResourcePackRepository;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,6 +34,8 @@ public class ExportThread extends Thread {
     private ICommandSender sender;
     private BlockPos pos1;
     private BlockPos pos2;
+
+    private boolean isCTMSupport = true;
 
     public ExportThread(MinecraftServer server, ICommandSender sender, BlockPos pos1, BlockPos pos2) {
         this.sender = sender;
@@ -71,6 +70,9 @@ public class ExportThread extends Thread {
                 }
 
                 IBlockState state = sender.getEntityWorld().getBlockState(pos);
+
+                if (state.toString().equals("minecraft:air")) continue;
+
                 IBlockState aState = state.getActualState(sender.getEntityWorld(), pos);
                 IBakedModel model = bms.getModelForState(aState);
 
@@ -79,8 +81,6 @@ public class ExportThread extends Thread {
                 double xOffset = pos.getX() - range.getMinX() + offset.x;
                 double yOffset = pos.getY() - range.getMinY() + offset.y;
                 double zOffset = pos.getZ() - range.getMinZ() + offset.z;
-
-//                sender.sendMessage(new TextComponentString(aState.getProperties().toString()));
 
         //            VertexDataの構造覚え書き
         //            基本的に28要素のint配列で保存
@@ -99,15 +99,12 @@ public class ExportThread extends Thread {
                     if (facing != null && !aState.shouldSideBeRendered(sender.getEntityWorld(), pos, facing)) continue;
 
                     for (BakedQuad quad : model.getQuads(aState, facing, 0)) {
-                        TextureAtlasSprite sprite = quad.getSprite();
-                        String name = sprite.getIconName();
-                        if (name.split(":").length == 1) {
-                            continue;
-                        }
+                        TextureHandler texHandler = new TextureHandler(quad.getSprite());
 
-                        int textureWidth = quad.getSprite().getIconWidth();
-                        int textureHeight = quad.getSprite().getIconHeight();
+                        int textureWidth = texHandler.getTextureWidth();
+                        int textureHeight = texHandler.getTextureHeight();
                         int[] vData = quad.getVertexData();
+
                         for (int i = 0; i < 4; i++) {
                             int index = i * 7;
 
@@ -128,50 +125,26 @@ public class ExportThread extends Thread {
                             obj.addNormal(nx, ny, nz);
                         }
 
-                        String[] filenames = name.split("/");
-                        String filename = filenames[filenames.length-1];
-                        ResourceLocation location = new ResourceLocation(name.split(":")[0], "textures/"+name.split(":")[1]+".png");
+                        String texName = texHandler.getTextureName();
+                        BufferedImage texture = texHandler.getBaseTextureImage(resourceManager);
 
-//                        ctm handling
-                        if (ctmHandler.hasCTMProperty(filename)) {
+                        if(isCTMSupport) {
                             CTMContext ctx = new CTMContext(sender.getEntityWorld(), quad, pos);
-                            String ctmPath = ctmHandler.getCTMPath(filename, ctx);
-
-                            if (ctmPath != null) {
-                                name = ctmPath;
-                                filenames = ctmPath.split("/");
-                                filename = filenames[filenames.length-1];
-                                location = new ResourceLocation(name + ".png");
-                            }
+                            String ctmName = texHandler.getConnectedImage(resourceManager, texture, ctmHandler, ctx);
+                            if (!ctmName.equals("none")) texName += "-" + ctmName;
                         }
+//                        TODO colormap実装
 
-                        String[] locationPath = location.getPath().split("/");
-                        InputStream textureInputStream = resourceManager.getResource(location).getInputStream();
-//                        getMinecraft().getResourcePackRepository().getDirResourcepacks();
+                        if (!mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
+                            String texLocation = "textures/" + texName + ".png";
+                            texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
 
-                        Path textureDirectory = Paths.get(
-                                "MineExporteR/assets/" + location.getNamespace() + "\\" +
-                                        String.join("\\", Arrays.copyOfRange(locationPath, 0, locationPath.length-1)));
-                        if (!Files.exists(textureDirectory)) {
-                            Files.createDirectories(textureDirectory);
-                        }
-
-                        String texturePath = textureDirectory + "\\" + locationPath[locationPath.length-1];
-                        if (!Files.exists(Paths.get(texturePath))) {
-                            Files.copy(textureInputStream, Paths.get(texturePath));
-                        }
-
-                        textureInputStream.close();
-
-                        String[] mtlNamelst = filename.split(":|/");
-                        String mtlName = mtlNamelst[mtlNamelst.length-1];
-                        if (!mtls.stream().map(m -> m.getName()).collect(Collectors.toList()).contains(mtlName)) {
-                            Mtl mtl = Mtls.create(mtlName);
-                            mtl.setMapKd(texturePath.substring(13));
+                            Mtl mtl = Mtls.create(texName);
+                            mtl.setMapKd(texLocation);
                             mtls.add(mtl);
                         }
 
-                        obj.setActiveMaterialGroupName(mtlName);
+                        obj.setActiveMaterialGroupName(texName);
                         obj.addFaceWithAll(4 * faceindex, 4 * faceindex + 1, 4 * faceindex + 2, 4 * faceindex + 3);
                         faceindex += 1;
                     }
@@ -180,7 +153,7 @@ public class ExportThread extends Thread {
 
             File objFile = new File("MineExporteR/export.obj");
             File mtlFile = new File("MineExporteR/export.mtl");
-            obj.setMtlFileNames(Arrays.asList("export.mtl"));
+            obj.setMtlFileNames(Collections.singletonList("export.mtl"));
             OutputStream objOutput = new FileOutputStream(objFile);
             OutputStream mtlOutput = new FileOutputStream(mtlFile);
             ObjWriter.write(obj, objOutput);

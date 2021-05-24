@@ -4,8 +4,8 @@ import com.chikage.mineexporter.ctm.CTMContext;
 import org.apache.commons.lang3.BooleanUtils;
 
 public class MethodCTM extends CTMMethod {
-    public MethodCTM(String path) {
-        super(path);
+    public MethodCTM(String path, String propertyName) {
+        super(path, propertyName);
     }
 
     private final int[] indecies = new int[]{
@@ -27,6 +27,7 @@ public class MethodCTM extends CTMMethod {
             37, 38, 37, 38, 30, 11, 30, 32, 37, 38, 37, 38, 25, 33, 25, 26
     };
 
+
 //    46 -> 0101 0101
 //    8 -> 0111 0101
 //    9 -> 0101 1101
@@ -38,7 +39,7 @@ public class MethodCTM extends CTMMethod {
 //    36 -> 0100 0000
 
     @Override
-    public String getTile(CTMContext ctx) {
+    public int getTileIndex(CTMContext ctx) {
         int isPUConnected = BooleanUtils.toInteger(ctx.shouldConnectTo(this, 1, 0));
         int isNUConnected = BooleanUtils.toInteger(ctx.shouldConnectTo(this, -1, 0));
         int isPVConnected = BooleanUtils.toInteger(ctx.shouldConnectTo(this, 0, 1));
@@ -60,6 +61,11 @@ public class MethodCTM extends CTMMethod {
                 isPUNVConnected<<3 |
                 isNUPVConnected<<7 |
                 isNUNVConnected<<1;
-        return tiles.get(indecies[flag]);
+        return indecies[flag];
+    }
+
+    @Override
+    public String getMethodName() {
+        return "ctm";
     }
 }
