@@ -1,21 +1,14 @@
 package com.chikage.mineexporter.ctm.method;
 
 import com.chikage.mineexporter.ctm.CTMContext;
-import lombok.Builder;
-import lombok.Value;
-import lombok.experimental.SuperBuilder;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public abstract class CTMMethod {
     public String directoryPath;
+    public String propertyName;
 
     public List<String> tiles;
     public List<String> matchTiles;
@@ -28,9 +21,12 @@ public abstract class CTMMethod {
     public int maxHeight = 255;
     public String name = null;
 
-    public CTMMethod(String path) {
+    public CTMMethod(String path, String propertyName) {
         this.directoryPath = path;
+        this.propertyName = propertyName;
     }
 
-    public abstract String getTile(CTMContext ctx);
+    public abstract int getTileIndex(CTMContext ctx);
+
+    public abstract String getMethodName();
 }
