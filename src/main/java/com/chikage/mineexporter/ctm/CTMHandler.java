@@ -18,14 +18,14 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 //CTM処理の大元
-//各処理への指示、データの総括、ExprotThreadとのやり取りはここを通じて行う
+//各処理への指示、データの総括、ExportThreadとのやり取りはここを通じて行う
 public class CTMHandler {
     IResourceManager resourceManager;
     ResourcePackRepository rpRep;
 
     Map<String, CTMMethod> locationCache = new HashMap<>();
 
-    String ctmDir = "assets/mcpatcher/ctm";
+    String ctmDir = "assets/minecraft/mcpatcher/ctm/";
 
     public CTMHandler(IResourceManager resourceManager, ResourcePackRepository rpRep) {
         this.resourceManager = resourceManager;
@@ -75,7 +75,7 @@ public class CTMHandler {
         String method = properties.getProperty("method");
 
         if (method == null) {
-            Main.logger.error("unexpexted null method: " + path + "/" + propertyName);
+            Main.logger.error("unexpected null method: " + path + "/" + propertyName);
             return null;
         }
 
@@ -223,8 +223,9 @@ public class CTMHandler {
         return locationCache.containsKey(texName) && locationCache.get(texName) != null;
     }
 
-    public String getTilePath(String texName, int index) {
+    public String getTilePath(String texName, int index) throws ArrayIndexOutOfBoundsException {
         CTMMethod prop = locationCache.get(texName);
+        if (index < 0 || index >= prop.tiles.size()) throw new ArrayIndexOutOfBoundsException("index must be in 0 to " + prop.tiles.size() + ": " + index);
         return "minecraft:" + prop.directoryPath + "/" +prop.tiles.get(index) + ".png";
     }
 

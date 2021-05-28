@@ -13,9 +13,9 @@ public class MethodRepeat extends CTMMethod{
 
     @Override
     public int getTileIndex(CTMContext ctx) {
-        int[] uvIndecies = ctx.getUVIndexes(this);
-        int uIndex = uvIndecies[0] % width;
-        int vIndex = uvIndecies[1] % height;
+        int[] uvIndices = ctx.getUVIndexes(this);
+        int uIndex = mod(uvIndices[0], width);
+        int vIndex = mod(uvIndices[1], height);
 
         return uIndex + vIndex*height;
     }
@@ -23,5 +23,11 @@ public class MethodRepeat extends CTMMethod{
     @Override
     public String getMethodName() {
         return "repeat";
+    }
+
+    private int mod(int n, int m) {
+        int result = n%m;
+        if (result < 0) result += m;
+        return result;
     }
 }
