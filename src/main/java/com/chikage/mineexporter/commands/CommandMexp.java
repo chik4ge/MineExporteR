@@ -120,7 +120,16 @@ public class CommandMexp implements IClientCommand {
             sender.sendMessage(new TextComponentString(TextFormatting.RED + "set pos1 and pos2 first."));
             return;
         }
+        Thread.UncaughtExceptionHandler handler = (t, e) -> {
+            sender.sendMessage(new TextComponentString(TextFormatting.RED + "An error has occurred during export process!"));
+            sender.sendMessage(new TextComponentString(TextFormatting.RED + e.getClass().getName() + ": " + e.getMessage()));
+            for (StackTraceElement trace: e.getStackTrace()) {
+                sender.sendMessage(new TextComponentString(TextFormatting.RED + trace.toString()));
+            }
+            e.printStackTrace();
+        };
         Thread exportThread = new ExportThread(server, sender, pos1, pos2);
+        exportThread.setUncaughtExceptionHandler(handler);
         exportThread.start();
 //        sender.sendMessage(new TextComponentString("pos1: " + pos1.toString() + "\n" + "pos2: " + pos2.toString()));
     }

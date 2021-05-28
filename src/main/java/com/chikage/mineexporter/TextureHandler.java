@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
 
+import javax.annotation.Nonnull;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -33,7 +34,7 @@ public class TextureHandler {
         this.baseTexLocation = new ResourceLocation(rawLocation.getNamespace(), "textures/"+ rawLocation.getPath()+".png");
     }
 
-    public String getConnectedImage(IResourceManager rm, BufferedImage image, CTMHandler handler, CTMContext ctx) throws IOException {
+    public String getConnectedImage(IResourceManager rm, BufferedImage image, CTMHandler handler, CTMContext ctx) throws IOException{
         if (!handler.hasCTMProperty(baseName)) return "none";
 
         String methodName = handler.getMethodName(baseName);
@@ -66,6 +67,7 @@ public class TextureHandler {
             }
 
         } else {
+            handler.getTilePath(baseName, index);
             ResourceLocation location = new ResourceLocation(handler.getTilePath(baseName, index));
             InputStream texInputStream = rm.getResource(location).getInputStream();
             BufferedImage newImage = ImageIO.read(texInputStream);
