@@ -44,7 +44,7 @@ public class CTMHandler {
                     ZipFile zipfile = new ZipFile(file);
                     ZipEntry entry;
                     while ((entry = zis.getNextEntry()) != null) {
-                        if (entry.isDirectory() || !entry.getName().endsWith(".properties") || entry.getName().startsWith(ctmDir)) {
+                        if (entry.isDirectory() || !entry.getName().endsWith(".properties") || !entry.getName().startsWith(ctmDir)) {
                             continue;
                         }
 //                        remove ".properties"
@@ -85,6 +85,7 @@ public class CTMHandler {
                 break;
 
             case "ctm_compact":
+                result = new MethodCTMCompact(path, propertyName);
                 break;
 
             case "horizontal":
@@ -232,7 +233,14 @@ public class CTMHandler {
         return prop.getTileIndex(ctx);
     }
 
+    public int[] getCompactTileIndices(String texName, CTMContext ctx) {
+        MethodCTMCompact prop = (MethodCTMCompact) locationCache.get(texName);
+        return prop.getCompactTileIndices(ctx);
+    }
+
     public String getMethodName(String texName) {
         return locationCache.get(texName).getMethodName();
     }
+
+
 }
