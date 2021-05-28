@@ -111,7 +111,7 @@ public class CommandMexp implements IClientCommand {
             pos2 = new BlockPos(x, y, z);
             sender.sendMessage(new TextComponentString("pos2 set to (" + pos2.getX() + ", " + pos2.getY() + ", " + pos2.getZ() + ")"));
         } else {
-            sender.sendMessage(new TextComponentString(TextFormatting.RED + "cannnot set pos1 successfully."));
+            sender.sendMessage(new TextComponentString(TextFormatting.RED + "cannnot set pos2 successfully."));
         }
     }
 

@@ -31,9 +31,9 @@ import static net.minecraft.client.Minecraft.getMinecraft;
 
 public class ExportThread extends Thread {
     private MinecraftServer server;
-    private ICommandSender sender;
-    private BlockPos pos1;
-    private BlockPos pos2;
+    private final ICommandSender sender;
+    private final BlockPos pos1;
+    private final BlockPos pos2;
 
     private boolean isCTMSupport = true;
 

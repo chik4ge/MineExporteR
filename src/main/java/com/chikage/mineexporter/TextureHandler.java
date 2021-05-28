@@ -39,11 +39,37 @@ public class TextureHandler {
         String methodName = handler.getMethodName(baseName);
         int index = handler.getTileIndex(baseName, ctx);
         if (methodName.equals("ctm_compact")){
+            BufferedImage[] images = new BufferedImage[5];
+            InputStream texIS0 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 0))).getInputStream();
+            InputStream texIS1 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 1))).getInputStream();
+            InputStream texIS2 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 2))).getInputStream();
+            InputStream texIS3 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 3))).getInputStream();
+            InputStream texIS4 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 4))).getInputStream();
+            images[0] = ImageIO.read(texIS0);
+            images[1] = ImageIO.read(texIS1);
+            images[2] = ImageIO.read(texIS2);
+            images[3] = ImageIO.read(texIS3);
+            images[4] = ImageIO.read(texIS4);
+            texIS0.close();
+            texIS1.close();
+            texIS2.close();
+            texIS3.close();
+            texIS4.close();
+
+            int[] indices = handler.getCompactTileIndices(baseName, ctx);
+
+            for (int x = 0; x < image.getWidth(); x++) {
+                for (int y = 0; y < image.getHeight(); y++) {
+                    int i = indices[Math.round((float)x/image.getWidth())*2+Math.round((float)y/image.getHeight())];
+                    image.setRGB(x, y, images[i].getRGB(x, y));
+                }
+            }
 
         } else {
             ResourceLocation location = new ResourceLocation(handler.getTilePath(baseName, index));
             InputStream texInputStream = rm.getResource(location).getInputStream();
             BufferedImage newImage = ImageIO.read(texInputStream);
+            texInputStream.close();
 
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {

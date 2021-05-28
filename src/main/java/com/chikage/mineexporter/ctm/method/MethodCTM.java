@@ -8,7 +8,7 @@ public class MethodCTM extends CTMMethod {
         super(path, propertyName);
     }
 
-    private final int[] indecies = new int[]{
+    private final int[] indices = new int[]{
              0,  3,  0,  3, 12,  5, 12, 15,  0,  3,  0,  3, 12,  5, 12, 15,
              1,  2,  1,  2,  4,  7,  4, 29,  1,  2,  1,  2, 13, 31, 13, 14,
              0,  3,  0,  3, 12,  5, 12, 15,  0,  3,  0,  3, 12,  5, 12, 15,
@@ -61,7 +61,7 @@ public class MethodCTM extends CTMMethod {
                 isPUNVConnected<<3 |
                 isNUPVConnected<<7 |
                 isNUNVConnected<<1;
-        return indecies[flag];
+        return indices[flag];
     }
 
     @Override
