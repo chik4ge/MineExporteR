@@ -8,6 +8,7 @@ import net.minecraft.util.ResourceLocation;
 
 import javax.annotation.Nonnull;
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -81,6 +82,25 @@ public class TextureHandler {
         }
 
         return methodName + index;
+    }
+
+    public void setColormapToImage(BufferedImage image, int tintRGB) {
+        int tintR = tintRGB>>>16 & 0xFF;
+        int tintG = tintRGB>>>8 & 0xFF;
+        int tintB = tintRGB & 0xFF;
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+
+                int argb = image.getRGB(x,y);
+
+                int mR = tintR * (argb>>>16 & 0xFF) / 255;
+                int mG = tintG * (argb>>>8 & 0xFF) / 255;
+                int mB = tintB * (argb & 0xFF) / 255;
+
+                int multiplied = argb&0xFF000000 | mR<<16 | mG<<8 | mB;
+                image.setRGB(x, y, multiplied);
+            }
+        }
     }
 
     public BufferedImage getBaseTextureImage(IResourceManager rm) throws IOException {

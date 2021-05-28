@@ -18,6 +18,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.world.biome.Biome;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.awt.image.BufferedImage;
@@ -141,13 +142,27 @@ public class ExportThread extends Thread {
                         }
                     }
 //                        TODO colormap実装
+//                    Biome biome = sender.getEntityWorld().getBiome(pos);
+//                    float temperature = biome.getTemperature(pos);
+//                    float rainfall = biome.getRainfall();
+//
+//                    float adjTemp = Math.max(Math.min(temperature, 1F), 0F);
+//                    float adjRainfall = Math.max(Math.min(rainfall, 1F), 0F)*adjTemp;
+
+                    int tintRGB = getMinecraft().getBlockColors().colorMultiplier(aState, sender.getEntityWorld(), pos, quad.getTintIndex());
+
+                    if (quad.getTintIndex() != -1 && tintRGB != -1) {
+                        texHandler.setColormapToImage(texture, tintRGB);
+                        texName += "-" + Integer.toHexString(tintRGB);
+                    }
+//                    TODO 草の側面が正しく描画されない、ctmのoverlayの様子も見ながら実装
 
                     if (!mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
                         String texLocation = "textures/" + texName + ".png";
                         try {
                             texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
                         } catch (IOException e) {
-                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to save texture image."));
+                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to save texture image: " + texLocation));
                             e.printStackTrace();
                         }
 
