@@ -49,6 +49,9 @@ public class ExportThread extends Thread {
     public void run() {
         Main.logger.info("exporting from (" + pos1.getX() + ", " + pos1.getY() + ", " + pos1.getZ() + ") to (" + pos2.getX() + ", " + pos2.getY() + ", " + pos2.getZ() + ")");
 
+//        delete texture file
+        deleteFile(new File("MineExporteR/textures"));
+
         IResourceManager resourceManager = getMinecraft().getResourceManager();
         ResourcePackRepository rpRep = getMinecraft().getResourcePackRepository();
         BlockModelShapes bms = getMinecraft().getBlockRendererDispatcher().getBlockModelShapes();
@@ -199,5 +202,17 @@ public class ExportThread extends Thread {
         }
         sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "successfully exported."));
 
+    }
+
+    private void deleteFile(File f) {
+        if (!f.exists()) return;
+        if (f.isFile()) f.delete();
+        else if (f.isDirectory()) {
+            File[] files = f.listFiles();
+            for (File cFile: files) {
+                deleteFile(cFile);
+            }
+            f.delete();
+        }
     }
 }
