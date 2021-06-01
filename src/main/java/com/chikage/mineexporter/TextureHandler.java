@@ -103,6 +103,10 @@ public class TextureHandler {
         }
     }
 
+    public void setOverlayImage(BufferedImage baseImage, BufferedImage overlayImage) {
+
+    }
+
     public BufferedImage getBaseTextureImage(IResourceManager rm) throws IOException {
         InputStream texInputStream = rm.getResource(baseTexLocation).getInputStream();
         return ImageIO.read(texInputStream);
