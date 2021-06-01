@@ -96,6 +96,59 @@ public class ExportThread extends Thread {
                 for (BakedQuad quad : model.getQuads(aState, facing, 0)) {
                     TextureHandler texHandler = new TextureHandler(quad.getSprite());
 
+                    String texName = texHandler.getTextureName();
+
+                    BufferedImage texture;
+                    try {
+                        texture = texHandler.getBaseTextureImage(resourceManager);
+                    } catch (IOException e) {
+                        sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find texture image. block: " + aState.getBlock().getRegistryName().toString() + " texture: " + quad.getSprite()));
+                        e.printStackTrace();
+                        continue;
+                    }
+
+                    if(isCTMSupport) {
+                        CTMContext ctx = new CTMContext(sender.getEntityWorld(), quad, pos);
+                        try {
+                            String ctmName = texHandler.getConnectedImage(resourceManager, texture, ctmHandler, ctx);
+                            if (!ctmName.equals("none")) texName += "-" + ctmName;
+                        } catch (IOException e) {
+                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find ctm image. block: " + aState.getBlock().getLocalizedName() + " texture: " + texName));
+                            e.printStackTrace();
+                        }
+                    }
+//                        TODO colormap実装
+//                    Biome biome = sender.getEntityWorld().getBiome(pos);
+//                    float temperature = biome.getTemperature(pos);
+//                    float rainfall = biome.getRainfall();
+//
+//                    float adjTemp = Math.max(Math.min(temperature, 1F), 0F);
+//                    float adjRainfall = Math.max(Math.min(rainfall, 1F), 0F)*adjTemp;
+
+
+                    if (quad.hasTintIndex()) {
+                        int tintRGB = getMinecraft().getBlockColors().colorMultiplier(aState, sender.getEntityWorld(), pos, quad.getTintIndex());
+                        texHandler.setColormapToImage(texture, tintRGB);
+                        texName += "-" + Integer.toHexString(tintRGB);
+                    }
+//                    TODO 草の側面が正しく描画されない、ctmのoverlayの様子も見ながら実装
+//                    普通にあとからレンダリングされてるからレイヤーっぽく見えるだけだった
+//                    同じブロック内で重なる箇所があり、かつレンダリング方法がCUTOUT系ならその面についてテクスチャをまとめる処理を入れる
+
+                    if (!mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
+                        String texLocation = "textures/" + texName + ".png";
+                        try {
+                            texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
+                        } catch (IOException e) {
+                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to save texture image: " + texLocation));
+                            e.printStackTrace();
+                        }
+
+                        Mtl mtl = Mtls.create(texName);
+                        mtl.setMapKd(texLocation);
+                        mtls.add(mtl);
+                    }
+
                     int textureWidth = texHandler.getTextureWidth();
                     int textureHeight = texHandler.getTextureHeight();
                     int[] vData = quad.getVertexData();
@@ -118,57 +171,6 @@ public class ExportThread extends Thread {
                         obj.addVertex(x, y, z);
                         obj.addTexCoord(u, v);
                         obj.addNormal(nx, ny, nz);
-                    }
-
-                    String texName = texHandler.getTextureName();
-
-                    BufferedImage texture;
-                    try {
-                        texture = texHandler.getBaseTextureImage(resourceManager);
-                    } catch (IOException e) {
-                        sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find texture image."));
-                        e.printStackTrace();
-                        return;
-                    }
-
-                    if(isCTMSupport) {
-                        CTMContext ctx = new CTMContext(sender.getEntityWorld(), quad, pos);
-                        try {
-                            String ctmName = texHandler.getConnectedImage(resourceManager, texture, ctmHandler, ctx);
-                            if (!ctmName.equals("none")) texName += "-" + ctmName;
-                        } catch (IOException e) {
-                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find ctm image."));
-                            e.printStackTrace();
-                        }
-                    }
-//                        TODO colormap実装
-//                    Biome biome = sender.getEntityWorld().getBiome(pos);
-//                    float temperature = biome.getTemperature(pos);
-//                    float rainfall = biome.getRainfall();
-//
-//                    float adjTemp = Math.max(Math.min(temperature, 1F), 0F);
-//                    float adjRainfall = Math.max(Math.min(rainfall, 1F), 0F)*adjTemp;
-
-                    int tintRGB = getMinecraft().getBlockColors().colorMultiplier(aState, sender.getEntityWorld(), pos, quad.getTintIndex());
-
-                    if (quad.getTintIndex() != -1 && tintRGB != -1) {
-                        texHandler.setColormapToImage(texture, tintRGB);
-                        texName += "-" + Integer.toHexString(tintRGB);
-                    }
-//                    TODO 草の側面が正しく描画されない、ctmのoverlayの様子も見ながら実装
-
-                    if (!mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
-                        String texLocation = "textures/" + texName + ".png";
-                        try {
-                            texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
-                        } catch (IOException e) {
-                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to save texture image: " + texLocation));
-                            e.printStackTrace();
-                        }
-
-                        Mtl mtl = Mtls.create(texName);
-                        mtl.setMapKd(texLocation);
-                        mtls.add(mtl);
                     }
 
                     obj.setActiveMaterialGroupName(texName);
