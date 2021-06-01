@@ -102,7 +102,7 @@ public class ExportThread extends Thread {
                     try {
                         texture = texHandler.getBaseTextureImage(resourceManager);
                     } catch (IOException e) {
-                        sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find texture image. block: " + aState.getBlock().getRegistryName().toString() + " texture: " + quad.getSprite()));
+                        sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find texture image. block: " + aState.getBlock().getRegistryName().toString()));
                         e.printStackTrace();
                         continue;
                     }
@@ -113,7 +113,7 @@ public class ExportThread extends Thread {
                             String ctmName = texHandler.getConnectedImage(resourceManager, texture, ctmHandler, ctx);
                             if (!ctmName.equals("none")) texName += "-" + ctmName;
                         } catch (IOException e) {
-                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find ctm image. block: " + aState.getBlock().getLocalizedName() + " texture: " + texName));
+                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find ctm image. block: " + aState.getBlock().getRegistryName().toString()));
                             e.printStackTrace();
                         }
                     }

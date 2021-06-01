@@ -42,11 +42,11 @@ public class TextureHandler {
         int index = handler.getTileIndex(baseName, ctx);
         if (methodName.equals("ctm_compact")){
             BufferedImage[] images = new BufferedImage[5];
-            InputStream texIS0 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 0))).getInputStream();
-            InputStream texIS1 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 1))).getInputStream();
-            InputStream texIS2 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 2))).getInputStream();
-            InputStream texIS3 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 3))).getInputStream();
-            InputStream texIS4 = rm.getResource(new ResourceLocation(handler.getTilePath(baseName, 4))).getInputStream();
+            InputStream texIS0 = handler.getTileInputStream(rm, baseName, 0);
+            InputStream texIS1 = handler.getTileInputStream(rm, baseName, 1);
+            InputStream texIS2 = handler.getTileInputStream(rm, baseName, 2);
+            InputStream texIS3 = handler.getTileInputStream(rm, baseName, 3);
+            InputStream texIS4 = handler.getTileInputStream(rm, baseName, 4);
             images[0] = ImageIO.read(texIS0);
             images[1] = ImageIO.read(texIS1);
             images[2] = ImageIO.read(texIS2);
@@ -68,9 +68,7 @@ public class TextureHandler {
             }
 
         } else {
-            handler.getTilePath(baseName, index);
-            ResourceLocation location = new ResourceLocation(handler.getTilePath(baseName, index));
-            InputStream texInputStream = rm.getResource(location).getInputStream();
+            InputStream texInputStream = handler.getTileInputStream(rm, baseName, index);
             BufferedImage newImage = ImageIO.read(texInputStream);
             texInputStream.close();
 

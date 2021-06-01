@@ -2,8 +2,10 @@ package com.chikage.mineexporter.ctm;
 
 import com.chikage.mineexporter.Main;
 import com.chikage.mineexporter.ctm.method.*;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.ResourcePackRepository;
+import net.minecraft.util.ResourceLocation;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -223,10 +225,29 @@ public class CTMHandler {
         return locationCache.containsKey(texName) && locationCache.get(texName) != null;
     }
 
-    public String getTilePath(String texName, int index) throws ArrayIndexOutOfBoundsException {
+    public InputStream getTileInputStream(IResourceManager rm, String texName, int index) throws ArrayIndexOutOfBoundsException, IOException {
         CTMMethod prop = locationCache.get(texName);
-        if (index < 0 || index >= prop.tiles.size()) throw new ArrayIndexOutOfBoundsException("index must be in 0 to " + prop.tiles.size() + ": " + index);
-        return "minecraft:" + prop.directoryPath + "/" +prop.tiles.get(index) + ".png";
+        if (index < 0 || index >= prop.tiles.size()) throw new ArrayIndexOutOfBoundsException("index must be in 0 to " + (prop.tiles.size()-1) + ": " + index);
+        String path = prop.tiles.get(index);
+        InputStream result = null;
+
+        try {
+            result =  rm.getResource(new ResourceLocation("minecraft:" + prop.directoryPath + "/" + path + ".png")).getInputStream();
+        } catch (IOException ignored) {
+        }
+
+//        full path
+        if(result == null) {
+            if (path.startsWith("assets/")) {
+                String[] paths = path.split("/");
+                ResourceLocation location = new ResourceLocation(paths[1], String.join("/", Arrays.copyOfRange(paths, 2, paths.length)) + ".png");
+                result = rm.getResource(location).getInputStream();
+            } else {
+                throw new IOException("An error occurred while parsing the path. Path: " + path);
+            }
+        }
+
+        return result;
     }
 
     public int getTileIndex(String texName, CTMContext ctx) {
