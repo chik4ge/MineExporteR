@@ -125,6 +125,9 @@ public class CTMContext {
                 result[0] = blockPos.getZ();
                 break;
         }
+        if (uFacing.getAxisDirection() == EnumFacing.AxisDirection.NEGATIVE) {
+            result[0] *= -1;
+        }
 
         switch (vAxis) {
             case X:
@@ -136,6 +139,9 @@ public class CTMContext {
             case Z:
                 result[1] = blockPos.getZ();
                 break;
+        }
+        if(vFacing.getAxisDirection() == EnumFacing.AxisDirection.POSITIVE) {
+            result[1] *= -1;
         }
 
         return result;
