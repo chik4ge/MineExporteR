@@ -17,7 +17,7 @@ public class MethodRepeat extends CTMMethod{
         int uIndex = mod(uvIndices[0], width);
         int vIndex = mod(uvIndices[1], height);
 
-        return uIndex + vIndex*height;
+        return uIndex + vIndex*width;
     }
 
     @Override

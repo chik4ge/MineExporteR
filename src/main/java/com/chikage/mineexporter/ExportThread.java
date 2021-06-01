@@ -47,6 +47,7 @@ public class ExportThread extends Thread {
     }
 
     public void run() {
+        boolean noError = true;
         Main.logger.info("exporting from (" + pos1.getX() + ", " + pos1.getY() + ", " + pos1.getZ() + ") to (" + pos2.getX() + ", " + pos2.getY() + ", " + pos2.getZ() + ")");
 
 //        delete texture file
@@ -105,7 +106,8 @@ public class ExportThread extends Thread {
                     try {
                         texture = texHandler.getBaseTextureImage(resourceManager);
                     } catch (IOException e) {
-                        sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find texture image. block: " + aState.getBlock().getRegistryName().toString()));
+                        noError = false;
+                        Main.logger.error("failed to find texture image. block: " + aState.getBlock().getRegistryName().toString());
                         e.printStackTrace();
                         continue;
                     }
@@ -115,8 +117,9 @@ public class ExportThread extends Thread {
                         try {
                             String ctmName = texHandler.getConnectedImage(resourceManager, texture, ctmHandler, ctx);
                             if (!ctmName.equals("none")) texName += "-" + ctmName;
-                        } catch (IOException e) {
-                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find ctm image. block: " + aState.getBlock().getRegistryName().toString()));
+                        } catch (IOException | ArrayIndexOutOfBoundsException e) {
+                            noError = false;
+                            Main.logger.error("failed to find ctm image. block: " + aState.getBlock().getRegistryName().toString());
                             e.printStackTrace();
                         }
                     }
@@ -143,7 +146,8 @@ public class ExportThread extends Thread {
                         try {
                             texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
                         } catch (IOException e) {
-                            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to save texture image: " + texLocation));
+                            noError = false;
+                            Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
                             e.printStackTrace();
                         }
 
@@ -196,11 +200,17 @@ public class ExportThread extends Thread {
         } catch (FileNotFoundException e) {
             sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find output file."));
             e.printStackTrace();
+            return;
         } catch (IOException e) {
             sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to write output file."));
             e.printStackTrace();
+            return;
         }
-        sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "successfully exported."));
+        if (noError) {
+            sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "successfully exported."));
+        } else {
+            sender.sendMessage(new TextComponentString(TextFormatting.YELLOW + "exported with some error. see the latest.log."));
+        }
 
     }
 
