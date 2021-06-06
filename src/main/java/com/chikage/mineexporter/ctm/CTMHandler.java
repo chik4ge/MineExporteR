@@ -2,10 +2,17 @@ package com.chikage.mineexporter.ctm;
 
 import com.chikage.mineexporter.Main;
 import com.chikage.mineexporter.ctm.method.*;
-import net.minecraft.client.Minecraft;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.ResourcePackRepository;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import net.minecraftforge.registries.ForgeRegistry;
+import net.minecraftforge.registries.IForgeRegistry;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -25,7 +32,8 @@ public class CTMHandler {
     IResourceManager resourceManager;
     ResourcePackRepository rpRep;
 
-    Map<String, CTMMethod> locationCache = new HashMap<>();
+//    Map<String, CTMMethod> locationCache = new HashMap<>();
+    ArrayList<CTMMethod> methods = new ArrayList<>();
 
     String ctmDir = "assets/minecraft/mcpatcher/ctm/";
 
@@ -56,7 +64,11 @@ public class CTMHandler {
                         String propertyName = name.split("/")[name.split("/").length-1];
 
                         InputStream entryInputStream = zipfile.getInputStream(entry);
-                        locationCache.put(name.split("/")[name.split("/").length-1], getCTMProperty(entryInputStream, directoryPath, propertyName));
+
+                        CTMMethod method = createCTMProperty(entryInputStream, directoryPath, propertyName);
+
+//                        locationCache.put(name.split("/")[name.split("/").length-1], method);
+                        if (method != null) methods.add(method);
                         entryInputStream.close();
                     }
                 } catch (IOException e) {
@@ -66,9 +78,11 @@ public class CTMHandler {
 //                TODO ディレクトリのリソパの実装
             }
         }
+
+        Collections.sort(methods, Comparator.comparing(o -> o.propertyName));
     }
 
-    private CTMMethod getCTMProperty(InputStream stream, String path, String propertyName) throws IOException {
+    private CTMMethod createCTMProperty(InputStream stream, String path, String propertyName) throws IOException {
         CTMMethod result = null;
 
         Properties properties = new Properties();
@@ -153,14 +167,23 @@ public class CTMHandler {
             result.tiles = getTiles(tiles);
         }
 
-        String matchTiles = properties.getProperty("matchTiles");
-        if (matchTiles != null) {
-            result.matchTiles = Arrays.asList(matchTiles.split(" "));
-        }
-
         String matchBlocks = properties.getProperty("matchBlocks");
         if (matchBlocks != null) {
-            result.matchBlocks = Arrays.asList(matchBlocks.split(" "));
+            result.matchBlocks = matchBlocks.split(" ");
+        } else if (propertyName.startsWith("block_")) {
+            result.matchBlocks = new String[]{propertyName.substring(6)};
+        }
+
+        String matchTiles = properties.getProperty("matchTiles");
+        if (matchTiles != null) {
+            result.matchTiles = matchTiles.split(" ");
+        } else if (matchBlocks == null) {
+            result.matchTiles = new String[]{propertyName};
+        }
+
+        String metadata = properties.getProperty("metadata");
+        if (metadata != null) {
+            result.metadata = getMetadata(metadata);
         }
 
 //        TODO connect
@@ -221,18 +244,32 @@ public class CTMHandler {
         return result;
     }
 
-    public boolean hasCTMProperty(String texName) {
-        return locationCache.containsKey(texName) && locationCache.get(texName) != null;
+    private int[] getMetadata(String s) {
+        List<Integer> result = new ArrayList<>();
+
+        String[] spaced = s.split(" ");
+        for (String element: spaced) {
+            List<String> hyphened = Arrays.asList(element.split("-"));
+            if (hyphened.size() == 2) {
+                int start = Integer.parseInt(hyphened.get(0));
+                int end = Integer.parseInt(hyphened.get(1));
+
+                for (int i=start; i<=end; i++) {
+                    result.add(i);
+                }
+            }
+        }
+
+        return ArrayUtils.toPrimitive(result.toArray(new Integer[result.size()]));
     }
 
-    public InputStream getTileInputStream(IResourceManager rm, String texName, int index) throws ArrayIndexOutOfBoundsException, IOException {
-        CTMMethod prop = locationCache.get(texName);
-        if (index < 0 || index >= prop.tiles.size()) throw new ArrayIndexOutOfBoundsException("index must be in 0 to " + (prop.tiles.size()-1) + ": " + index);
-        String path = prop.tiles.get(index);
+    public InputStream getTileInputStream(IResourceManager rm, CTMMethod method, int index) throws ArrayIndexOutOfBoundsException, IOException {
+        if (index < 0 || index >= method.tiles.size()) throw new ArrayIndexOutOfBoundsException("index must be in 0 to " + (method.tiles.size()-1) + ": " + index);
+        String path = method.tiles.get(index);
         InputStream result = null;
 
         try {
-            result =  rm.getResource(new ResourceLocation("minecraft:" + prop.directoryPath + "/" + path + ".png")).getInputStream();
+            result =  rm.getResource(new ResourceLocation("minecraft:" + method.directoryPath + "/" + path + ".png")).getInputStream();
         } catch (IOException ignored) {
         }
 
@@ -250,18 +287,76 @@ public class CTMHandler {
         return result;
     }
 
-    public int getTileIndex(String texName, CTMContext ctx) {
-        CTMMethod prop = locationCache.get(texName);
-        return prop.getTileIndex(ctx);
+    public CTMMethod getMethod(IBlockState state, ResourceLocation texLocation) {
+        CTMMethod matchedByBlock = null;
+        boolean isBlockMatched = false;
+        for (CTMMethod method: methods) {
+            if (isMatchTile(method, texLocation)) return method;
+            if (!isBlockMatched && isMatchBlock(method, state)){
+                matchedByBlock = method;
+                isBlockMatched = true;
+            }
+        }
+        return matchedByBlock;
     }
 
-    public int[] getCompactTileIndices(String texName, CTMContext ctx) {
-        MethodCTMCompact prop = (MethodCTMCompact) locationCache.get(texName);
-        return prop.getCompactTileIndices(ctx);
+    private boolean isMatchTile(CTMMethod method, ResourceLocation texLocation) {
+        if (method.matchTiles == null) return false;
+        for (String tileName: method.matchTiles) {
+            ResourceLocation rawLocation = new ResourceLocation(tileName);
+            if (rawLocation == texLocation) return true;
+            else {
+                String pathIn;
+                if (tileName.endsWith(".png")){
+                    pathIn = "textures/blocks/"+ rawLocation.getPath();
+                } else {
+                    pathIn = "textures/blocks/"+ rawLocation.getPath()+".png";
+                }
+                ResourceLocation location = new ResourceLocation(rawLocation.getNamespace(), pathIn);
+                if (location.equals(texLocation)) return true;
+            }
+        }
+        return false;
     }
 
-    public String getMethodName(String texName) {
-        return locationCache.get(texName).getMethodName();
+//    TODO このスパゲッティなんとかする
+    private boolean isMatchBlock(CTMMethod method, IBlockState state) {
+        if (method.matchBlocks == null) return false;
+        for (String stateName: method.matchBlocks) {
+            String[] splatted = stateName.split(":");
+            if (splatted.length  <= 2) {
+                Block matchBlock;
+                if (stateName.matches("\\d+")) {
+                    matchBlock = Block.getBlockById(Integer.parseInt(stateName));
+                } else {
+                    matchBlock = Block.getBlockFromName(stateName);
+                }
+                if(matchBlock != null && state.getBlock() == matchBlock && (method.metadata == null || ArrayUtils.contains(method.metadata, matchBlock.getMetaFromState(state)))) return true;
+            } else {
+                NBTTagCompound tagCompound = new NBTTagCompound();
+                NBTUtil.writeBlockState(tagCompound, state);
+                if (!tagCompound.getString("Name").equals(splatted[0] + ":" + splatted[1])) return false;
+                NBTTagCompound properties = tagCompound.getCompoundTag("Properties");
+                for (int i=3; i<splatted.length; i++) {
+                    String[] stateSplatted = splatted[i].split("=");
+                    if (!ArrayUtils.contains(stateSplatted[1].split(","), properties.getString(stateSplatted[0]))) return false;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int getTileIndex(CTMMethod method, CTMContext ctx) {
+        return method.getTileIndex(ctx);
+    }
+
+    public int[] getCompactTileIndices(CTMMethod method, CTMContext ctx) {
+        return ((MethodCTMCompact)method).getCompactTileIndices(ctx);
+    }
+
+    public String getMethodName(CTMMethod method) {
+        return method.getMethodName();
     }
 
 

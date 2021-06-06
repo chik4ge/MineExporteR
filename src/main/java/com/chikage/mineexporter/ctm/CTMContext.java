@@ -46,6 +46,10 @@ public class CTMContext {
         return Block.getStateById(Block.getStateId(state)) == Block.getStateById(Block.getStateId(targetState));
     }
 
+    public IBlockState getBlockState() {
+        return access.getBlockState(blockPos).getActualState(access, blockPos);
+    }
+
     private EnumFacing[] estimateUVFacing(){
         EnumFacing[] result = new EnumFacing[2];
         int[] vData = quad.getVertexData();

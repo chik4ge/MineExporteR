@@ -44,19 +44,15 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2855'
     compile 'de.javagl:obj:0.3.0'
-    compileOnly 'org.projectlombok:lombok:1.18.20'
-    annotationProcessor 'org.projectlombok:lombok:1.18.20'
 }
 
 shadowJar {
     dependencies {
         include(dependency('de.javagl:obj:.*'))
-        include(dependency('org.projectlombok:lombok:.*'))
     }
 
     // Relocate class to prevent conflicts with other mods that include it
     relocate 'de.javagl.obj', 'com.chikage.mineexporter.de.javagl.obj'
-    relocate 'org.projectlombok:lombok', 'com.chikage.mineexporter.org.projectlombok:lombok'
 
     classifier '' // Replace the default JAR
 }
