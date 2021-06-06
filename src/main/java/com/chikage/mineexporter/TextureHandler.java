@@ -2,6 +2,8 @@ package com.chikage.mineexporter;
 
 import com.chikage.mineexporter.ctm.CTMContext;
 import com.chikage.mineexporter.ctm.CTMHandler;
+import com.chikage.mineexporter.ctm.method.CTMMethod;
+import com.chikage.mineexporter.ctm.method.MethodCTMCompact;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
@@ -36,17 +38,18 @@ public class TextureHandler {
     }
 
     public String getConnectedImage(IResourceManager rm, BufferedImage image, CTMHandler handler, CTMContext ctx) throws IOException{
-        if (!handler.hasCTMProperty(baseName)) return "none";
+        CTMMethod method = handler.getMethod(ctx.getBlockState(), baseTexLocation);
+        if (method == null) return "none";
 
-        String methodName = handler.getMethodName(baseName);
-        int index = handler.getTileIndex(baseName, ctx);
-        if (methodName.equals("ctm_compact")){
+        String methodName = handler.getMethodName(method);
+        int index = handler.getTileIndex(method, ctx);
+        if (method instanceof MethodCTMCompact){
             BufferedImage[] images = new BufferedImage[5];
-            InputStream texIS0 = handler.getTileInputStream(rm, baseName, 0);
-            InputStream texIS1 = handler.getTileInputStream(rm, baseName, 1);
-            InputStream texIS2 = handler.getTileInputStream(rm, baseName, 2);
-            InputStream texIS3 = handler.getTileInputStream(rm, baseName, 3);
-            InputStream texIS4 = handler.getTileInputStream(rm, baseName, 4);
+            InputStream texIS0 = handler.getTileInputStream(rm, method, 0);
+            InputStream texIS1 = handler.getTileInputStream(rm, method, 1);
+            InputStream texIS2 = handler.getTileInputStream(rm, method, 2);
+            InputStream texIS3 = handler.getTileInputStream(rm, method, 3);
+            InputStream texIS4 = handler.getTileInputStream(rm, method, 4);
             images[0] = ImageIO.read(texIS0);
             images[1] = ImageIO.read(texIS1);
             images[2] = ImageIO.read(texIS2);
@@ -58,7 +61,7 @@ public class TextureHandler {
             texIS3.close();
             texIS4.close();
 
-            int[] indices = handler.getCompactTileIndices(baseName, ctx);
+            int[] indices = handler.getCompactTileIndices(method, ctx);
 
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {
@@ -68,7 +71,7 @@ public class TextureHandler {
             }
 
         } else {
-            InputStream texInputStream = handler.getTileInputStream(rm, baseName, index);
+            InputStream texInputStream = handler.getTileInputStream(rm, method, index);
             BufferedImage newImage = ImageIO.read(texInputStream);
             texInputStream.close();
 

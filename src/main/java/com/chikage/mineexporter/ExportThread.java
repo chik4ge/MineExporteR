@@ -4,7 +4,6 @@ import com.chikage.mineexporter.ctm.CTMContext;
 import com.chikage.mineexporter.ctm.CTMHandler;
 import com.chikage.mineexporter.utils.Range;
 import de.javagl.obj.*;
-import lombok.SneakyThrows;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.BlockModelShapes;
 import net.minecraft.client.renderer.block.model.BakedQuad;
