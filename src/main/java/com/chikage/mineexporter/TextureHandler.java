@@ -38,7 +38,7 @@ public class TextureHandler {
     }
 
     public String getConnectedImage(IResourceManager rm, BufferedImage image, CTMHandler handler, CTMContext ctx) throws IOException{
-        CTMMethod method = handler.getMethod(ctx.getBlockState(), baseTexLocation);
+        CTMMethod method = handler.getMethod(ctx, baseTexLocation);
         if (method == null) return "none";
 
         String methodName = handler.getMethodName(method);
