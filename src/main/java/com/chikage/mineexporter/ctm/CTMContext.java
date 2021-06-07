@@ -50,6 +50,10 @@ public class CTMContext {
         return access.getBlockState(blockPos).getActualState(access, blockPos);
     }
 
+    public EnumFacing getFacing() {
+        return quad.getFace();
+    }
+
     private EnumFacing[] estimateUVFacing(){
         EnumFacing[] result = new EnumFacing[2];
         int[] vData = quad.getVertexData();

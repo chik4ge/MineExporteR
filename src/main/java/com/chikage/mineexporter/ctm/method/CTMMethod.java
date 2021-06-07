@@ -17,7 +17,7 @@ public abstract class CTMMethod {
     public int[] metadata;
     public int weight = 0;
     public String connect = "block";
-    public List<String> faces = new ArrayList<>(Arrays.asList("all"));
+    public String[] faces = new String[]{"all"};
     public List<String> biomes = null;
     public int minHeight = 0;
     public int maxHeight = 255;

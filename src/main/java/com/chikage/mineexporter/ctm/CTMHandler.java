@@ -8,7 +8,9 @@ import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.ResourcePackRepository;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTUtil;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.registries.ForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
@@ -196,7 +198,7 @@ public class CTMHandler {
 
         String faces = properties.getProperty("faces");
         if (faces != null) {
-            result.faces = Arrays.asList(faces.split(" "));
+            result.faces = faces.split(" ");
         }
 
 //        TODO biomes
@@ -257,6 +259,8 @@ public class CTMHandler {
                 for (int i=start; i<=end; i++) {
                     result.add(i);
                 }
+            } else {
+                result.add(Integer.parseInt(element));
             }
         }
 
@@ -287,10 +291,16 @@ public class CTMHandler {
         return result;
     }
 
-    public CTMMethod getMethod(IBlockState state, ResourceLocation texLocation) {
+    public CTMMethod getMethod(CTMContext ctx, ResourceLocation texLocation) {
+        IBlockState state = ctx.getBlockState();
+        EnumFacing face = ctx.getFacing();
         CTMMethod matchedByBlock = null;
         boolean isBlockMatched = false;
+        int metadata = state.getBlock().getMetaFromState(state);
         for (CTMMethod method: methods) {
+            if (!isMatchMetaData(method, metadata)) continue;
+            if (!isMatchFace(method, face)) continue;
+
             if (isMatchTile(method, texLocation)) return method;
             if (!isBlockMatched && isMatchBlock(method, state)){
                 matchedByBlock = method;
@@ -298,6 +308,43 @@ public class CTMHandler {
             }
         }
         return matchedByBlock;
+    }
+
+    private boolean isMatchMetaData(CTMMethod method, int meta) {
+        return (method.metadata == null || ArrayUtils.contains(method.metadata, meta));
+    }
+
+    private boolean isMatchFace(CTMMethod method, EnumFacing facing) {
+        for (String face: method.faces) {
+            switch (face) {
+                case "all":
+                    return true;
+                case "sides":
+                    if(facing.getAxis().isHorizontal()) return true;
+                    break;
+                case "top":
+                    if(facing == EnumFacing.UP) return true;
+                    break;
+                case "bottom":
+                    if(facing == EnumFacing.DOWN) return true;
+                    break;
+
+                case "north":
+                case "south":
+                case "east":
+                case "west":
+                    if(facing.getName().equals(face)) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isMatchBiome(CTMMethod method, Biome biome) {
+        return true;
+    }
+
+    private boolean isMatchHeight(CTMMethod method, int height) {
+        return true;
     }
 
     private boolean isMatchTile(CTMMethod method, ResourceLocation texLocation) {
@@ -331,7 +378,7 @@ public class CTMHandler {
                 } else {
                     matchBlock = Block.getBlockFromName(stateName);
                 }
-                if(matchBlock != null && state.getBlock() == matchBlock && (method.metadata == null || ArrayUtils.contains(method.metadata, matchBlock.getMetaFromState(state)))) return true;
+                if(matchBlock != null && state.getBlock() == matchBlock) return true;
             } else {
                 NBTTagCompound tagCompound = new NBTTagCompound();
                 NBTUtil.writeBlockState(tagCompound, state);
