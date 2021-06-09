@@ -1,6 +1,7 @@
 package com.chikage.mineexporter.ctm;
 
 import com.chikage.mineexporter.Main;
+import com.chikage.mineexporter.TextureHandler;
 import com.chikage.mineexporter.ctm.method.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -11,11 +12,9 @@ import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.biome.Biome;
-import net.minecraftforge.fml.common.registry.ForgeRegistries;
-import net.minecraftforge.registries.ForgeRegistry;
-import net.minecraftforge.registries.IForgeRegistry;
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -30,8 +29,8 @@ import java.util.zip.ZipInputStream;
 
 //CTM処理の大元
 //各処理への指示、データの総括、ExportThreadとのやり取りはここを通じて行う
+//TODO ブロックごとにインスタンスを生成するように、リソパ変更時にmethodsの変更を行う
 public class CTMHandler {
-    IResourceManager resourceManager;
     ResourcePackRepository rpRep;
 
 //    Map<String, CTMMethod> locationCache = new HashMap<>();
@@ -39,8 +38,7 @@ public class CTMHandler {
 
     String ctmDir = "assets/minecraft/mcpatcher/ctm/";
 
-    public CTMHandler(IResourceManager resourceManager, ResourcePackRepository rpRep) {
-        this.resourceManager = resourceManager;
+    public CTMHandler(ResourcePackRepository rpRep) {
         this.rpRep = rpRep;
 
         createLocationCache();
@@ -267,13 +265,13 @@ public class CTMHandler {
         return ArrayUtils.toPrimitive(result.toArray(new Integer[result.size()]));
     }
 
-    public InputStream getTileInputStream(IResourceManager rm, CTMMethod method, int index) throws ArrayIndexOutOfBoundsException, IOException {
+    public BufferedImage getTileInputStream(IResourceManager rm, CTMMethod method, int index) throws ArrayIndexOutOfBoundsException, IOException {
         if (index < 0 || index >= method.tiles.size()) throw new ArrayIndexOutOfBoundsException("index must be in 0 to " + (method.tiles.size()-1) + ": " + index);
         String path = method.tiles.get(index);
-        InputStream result = null;
+        BufferedImage result = null;
 
         try {
-            result =  rm.getResource(new ResourceLocation("minecraft:" + method.directoryPath + "/" + path + ".png")).getInputStream();
+            result = TextureHandler.getImage(rm, new ResourceLocation("minecraft:" + method.directoryPath + "/" + path + ".png"));
         } catch (IOException ignored) {
         }
 
@@ -282,7 +280,7 @@ public class CTMHandler {
             if (path.startsWith("assets/")) {
                 String[] paths = path.split("/");
                 ResourceLocation location = new ResourceLocation(paths[1], String.join("/", Arrays.copyOfRange(paths, 2, paths.length)) + ".png");
-                result = rm.getResource(location).getInputStream();
+                result = TextureHandler.getImage(rm, location);
             } else {
                 throw new IOException("An error occurred while parsing the path. Path: " + path);
             }

@@ -49,7 +49,7 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
     @Override
     public BlockPos next() {
         if ((index.getX() > maxX) || (index.getY() > maxY) || (index.getZ() > maxZ)) {
-            throw new IndexOutOfBoundsException();
+            throw new NoSuchElementException();
         }
         BlockPos cursor = new BlockPos(index.getX(), index.getY(), index.getZ());
 
@@ -77,6 +77,18 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
 
     public int getMinZ() {
         return minZ;
+    }
+
+    public int getMaxX() {
+        return maxX;
+    }
+
+    public int getMaxY() {
+        return maxY;
+    }
+
+    public int getMaxZ() {
+        return maxZ;
     }
 
     public int getSize() {
