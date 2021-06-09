@@ -8,18 +8,19 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
 
-import javax.annotation.Nonnull;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TextureHandler {
+
+    private static final Map<ResourceLocation, BufferedImage> texCache = new HashMap<>();
 
     private int width;
     private int height;
@@ -45,21 +46,11 @@ public class TextureHandler {
         int index = handler.getTileIndex(method, ctx);
         if (method instanceof MethodCTMCompact){
             BufferedImage[] images = new BufferedImage[5];
-            InputStream texIS0 = handler.getTileInputStream(rm, method, 0);
-            InputStream texIS1 = handler.getTileInputStream(rm, method, 1);
-            InputStream texIS2 = handler.getTileInputStream(rm, method, 2);
-            InputStream texIS3 = handler.getTileInputStream(rm, method, 3);
-            InputStream texIS4 = handler.getTileInputStream(rm, method, 4);
-            images[0] = ImageIO.read(texIS0);
-            images[1] = ImageIO.read(texIS1);
-            images[2] = ImageIO.read(texIS2);
-            images[3] = ImageIO.read(texIS3);
-            images[4] = ImageIO.read(texIS4);
-            texIS0.close();
-            texIS1.close();
-            texIS2.close();
-            texIS3.close();
-            texIS4.close();
+            images[0] = handler.getTileInputStream(rm, method, 0);
+            images[1] = handler.getTileInputStream(rm, method, 1);
+            images[2] = handler.getTileInputStream(rm, method, 2);
+            images[3] = handler.getTileInputStream(rm, method, 3);
+            images[4] = handler.getTileInputStream(rm, method, 4);
 
             int[] indices = handler.getCompactTileIndices(method, ctx);
 
@@ -71,9 +62,7 @@ public class TextureHandler {
             }
 
         } else {
-            InputStream texInputStream = handler.getTileInputStream(rm, method, index);
-            BufferedImage newImage = ImageIO.read(texInputStream);
-            texInputStream.close();
+            BufferedImage newImage = handler.getTileInputStream(rm, method, index);
 
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {
@@ -109,8 +98,7 @@ public class TextureHandler {
     }
 
     public BufferedImage getBaseTextureImage(IResourceManager rm) throws IOException {
-        InputStream texInputStream = rm.getResource(baseTexLocation).getInputStream();
-        return ImageIO.read(texInputStream);
+        return getImage(rm, baseTexLocation);
     }
 
     public void save(BufferedImage image, Path output) throws IOException {
@@ -129,5 +117,25 @@ public class TextureHandler {
     private String getSplitLast(String s, String regex) {
         String[] splatted = s.split(regex);
         return splatted[splatted.length-1];
+    }
+
+    public static BufferedImage getImage(IResourceManager rm, ResourceLocation location) throws IOException {
+        if (texCache.containsKey(location)) return copyImage(texCache.get(location));
+        else {
+            InputStream texInputStream = rm.getResource(location).getInputStream();
+            BufferedImage image = ImageIO.read(texInputStream);
+            texCache.put(location, image);
+            texInputStream.close();
+            return copyImage(image);
+        }
+    }
+
+//    quote from https://stackoverflow.com/questions/3514158/how-do-you-clone-a-bufferedimage
+    private static BufferedImage copyImage(BufferedImage source){
+        BufferedImage b = new BufferedImage(source.getWidth(), source.getHeight(), source.getType());
+        Graphics g = b.createGraphics();
+        g.drawImage(source, 0, 0, null);
+        g.dispose();
+        return b;
     }
 }

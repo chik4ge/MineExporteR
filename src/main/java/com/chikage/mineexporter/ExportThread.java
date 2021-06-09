@@ -46,6 +46,7 @@ public class ExportThread extends Thread {
     }
 
     public void run() {
+        long startTime = System.currentTimeMillis();
         boolean noError = true;
         Main.logger.info("exporting from (" + pos1.getX() + ", " + pos1.getY() + ", " + pos1.getZ() + ") to (" + pos2.getX() + ", " + pos2.getY() + ", " + pos2.getZ() + ")");
 
@@ -62,10 +63,19 @@ public class ExportThread extends Thread {
         Range range = new Range(pos1, pos2);
 
         Main.logger.info("creating ctm cache...");
-        CTMHandler ctmHandler = new CTMHandler(resourceManager, rpRep);
+        CTMHandler ctmHandler = new CTMHandler(rpRep);
         Main.logger.info("successfully created ctm cache.");
 
+        long countStart = System.currentTimeMillis();
+
+        int blockIndex = 0;
         for (BlockPos pos: range) {
+            blockIndex++;
+
+            if (System.currentTimeMillis() - countStart > 5000) {
+                countStart = System.currentTimeMillis();
+                sender.sendMessage(new TextComponentString("processed " + blockIndex + "blocks (" + (100*blockIndex)/range.getSize() + "%)"));
+            }
 
             IBlockState state = sender.getEntityWorld().getBlockState(pos);
 
@@ -79,6 +89,7 @@ public class ExportThread extends Thread {
             double xOffset = pos.getX() - range.getMinX() + offset.x;
             double yOffset = pos.getY() - range.getMinY() + offset.y;
             double zOffset = pos.getZ() - range.getMinZ() + offset.z;
+
 
     //            VertexDataの構造覚え書き
     //            基本的に28要素のint配列で保存
@@ -190,8 +201,8 @@ public class ExportThread extends Thread {
         File mtlFile = new File("MineExporteR/export.mtl");
         obj.setMtlFileNames(Collections.singletonList("export.mtl"));
         try {
-            OutputStream objOutput = new FileOutputStream(objFile);
-            OutputStream mtlOutput = new FileOutputStream(mtlFile);
+            OutputStream objOutput = new BufferedOutputStream(new FileOutputStream(objFile));
+            OutputStream mtlOutput = new BufferedOutputStream(new FileOutputStream(mtlFile));
             ObjWriter.write(obj, objOutput);
             MtlWriter.write(mtls, mtlOutput);
             mtlOutput.close();
@@ -211,6 +222,8 @@ public class ExportThread extends Thread {
             sender.sendMessage(new TextComponentString(TextFormatting.YELLOW + "exported with some error. see the latest.log."));
         }
 
+        long endTime = System.currentTimeMillis();
+        sender.sendMessage(new TextComponentString("elapsed " + (endTime-startTime)/1000.0 + "s"));
     }
 
     private void deleteFile(File f) {
