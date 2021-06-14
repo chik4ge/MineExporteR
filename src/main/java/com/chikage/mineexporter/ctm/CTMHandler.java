@@ -34,7 +34,9 @@ public class CTMHandler {
     ResourcePackRepository rpRep;
 
 //    Map<String, CTMMethod> locationCache = new HashMap<>();
-    ArrayList<CTMMethod> methods = new ArrayList<>();
+//    ArrayList<CTMMethod> methods = new ArrayList<>();
+    Map<ResourceLocation, HashSet<CTMMethod>> tileMatches = new HashMap();
+    Map<Block, HashSet<CTMMethod>> blockMatches = new HashMap<>();
 
     String ctmDir = "assets/minecraft/mcpatcher/ctm/";
 
@@ -68,7 +70,8 @@ public class CTMHandler {
                         CTMMethod method = createCTMProperty(entryInputStream, directoryPath, propertyName);
 
 //                        locationCache.put(name.split("/")[name.split("/").length-1], method);
-                        if (method != null) methods.add(method);
+//                        if (method != null) methods.add(method);
+                        putMethod(method);
                         entryInputStream.close();
                     }
                 } catch (IOException e) {
@@ -79,7 +82,49 @@ public class CTMHandler {
             }
         }
 
-        Collections.sort(methods, Comparator.comparing(o -> o.propertyName));
+//        Collections.sort(methods, Comparator.comparing(o -> o.propertyName));
+    }
+
+    private void putMethod(CTMMethod method) {
+        if (method == null) return;
+
+        if (method.matchTiles != null) {
+            for (String tileName: method.matchTiles) {
+                ResourceLocation rawLocation = new ResourceLocation(tileName);
+                putIfAbsent(tileMatches, rawLocation, method);
+
+                String pathIn;
+                if (tileName.endsWith(".png")){
+                    pathIn = "textures/blocks/"+ rawLocation.getPath();
+                } else {
+                    pathIn = "textures/blocks/"+ rawLocation.getPath()+".png";
+                }
+                ResourceLocation location = new ResourceLocation(rawLocation.getNamespace(), pathIn);
+                putIfAbsent(tileMatches, location, method);
+            }
+        }
+
+        if (method.matchBlocks != null) {
+            for(String stateName: method.matchBlocks) {
+                String blockName;
+                String[] splatted = stateName.split(":");
+                if (splatted.length >= 2) {
+                    blockName = splatted[0] + ":" + splatted[1];
+                } else {
+                    blockName = stateName;
+                }
+                Block matchBlock = Block.getBlockFromName(blockName);
+                putIfAbsent(blockMatches, matchBlock, method);
+            }
+        }
+    }
+
+    private <K, V> void putIfAbsent(Map<K, HashSet<V>> ma, K key, V me) {
+        if (ma.containsKey(key)) {
+            ma.get(key).add(me);
+        } else {
+            ma.put(key, new HashSet<V>(Arrays.asList(me)));
+        }
     }
 
     private CTMMethod createCTMProperty(InputStream stream, String path, String propertyName) throws IOException {
@@ -292,20 +337,37 @@ public class CTMHandler {
     public CTMMethod getMethod(CTMContext ctx, ResourceLocation texLocation) {
         IBlockState state = ctx.getBlockState();
         EnumFacing face = ctx.getFacing();
-        CTMMethod matchedByBlock = null;
-        boolean isBlockMatched = false;
         int metadata = state.getBlock().getMetaFromState(state);
-        for (CTMMethod method: methods) {
-            if (!isMatchMetaData(method, metadata)) continue;
-            if (!isMatchFace(method, face)) continue;
 
-            if (isMatchTile(method, texLocation)) return method;
-            if (!isBlockMatched && isMatchBlock(method, state)){
-                matchedByBlock = method;
-                isBlockMatched = true;
+        if (tileMatches.containsKey(texLocation)) {
+            CTMMethod result = null;
+            for(CTMMethod method: tileMatches.get(texLocation)) {
+                if (!isMatchMetaData(method, metadata)) continue;
+                if (!isMatchFace(method, face)) continue;
+                
+                if(result == null) result = method;
+                else if (result.propertyName.compareTo(method.propertyName) > 0) {
+                    result = method;
+                }
             }
+            if (result != null) return result;
         }
-        return matchedByBlock;
+
+        if (blockMatches.containsKey(state.getBlock())) {
+            CTMMethod result = null;
+            for(CTMMethod method: blockMatches.get(state.getBlock())) {
+                if (!isMatchMetaData(method, metadata)) continue;
+                if (!isMatchFace(method, face)) continue;
+                if (!isMatchBlock(method, state)) continue;
+
+                if(result == null) result = method;
+                else if (result.propertyName.compareTo(method.propertyName) > 0) {
+                    result = method;
+                }
+            }
+            return result;
+        }
+        return null;
     }
 
     private boolean isMatchMetaData(CTMMethod method, int meta) {

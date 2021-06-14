@@ -26,7 +26,7 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
         minZ = Math.min(pos1.getZ(), pos2.getZ());
         maxZ = Math.max(pos1.getZ(), pos2.getZ());
 
-        size = (maxX - minX + 1) * (maxY - minY + 1) * (maxY - minY + 1);
+        size = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         index = new BlockPos(minX, minY, minZ);
     }
 

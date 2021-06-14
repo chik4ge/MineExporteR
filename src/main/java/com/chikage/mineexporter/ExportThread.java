@@ -74,7 +74,7 @@ public class ExportThread extends Thread {
 
             if (System.currentTimeMillis() - countStart > 5000) {
                 countStart = System.currentTimeMillis();
-                sender.sendMessage(new TextComponentString("processed " + blockIndex + "blocks (" + (100*blockIndex)/range.getSize() + "%)"));
+                sender.sendMessage(new TextComponentString("processed " + blockIndex + "/" + range.getSize() +  " blocks (" + (100*blockIndex)/range.getSize() + "%)"));
             }
 
             IBlockState state = sender.getEntityWorld().getBlockState(pos);
