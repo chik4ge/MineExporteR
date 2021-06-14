@@ -22,7 +22,6 @@ public abstract class CTMMethod {
     public int minHeight = 0;
     public int maxHeight = 255;
     public String name = null;
-    public String fileName;
 
     public CTMMethod(String path, String propertyName) {
         this.directoryPath = path;
