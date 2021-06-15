@@ -13,6 +13,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.biome.Biome;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.BooleanUtils;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -310,7 +311,7 @@ public class CTMHandler {
         return ArrayUtils.toPrimitive(result.toArray(new Integer[result.size()]));
     }
 
-    public BufferedImage getTileInputStream(IResourceManager rm, CTMMethod method, int index) throws ArrayIndexOutOfBoundsException, IOException {
+    public BufferedImage getTileBufferedImage(IResourceManager rm, CTMMethod method, int index) throws ArrayIndexOutOfBoundsException, IOException {
         if (index < 0 || index >= method.tiles.size()) throw new ArrayIndexOutOfBoundsException("index must be in 0 to " + (method.tiles.size()-1) + ": " + index);
         String path = method.tiles.get(index);
         BufferedImage result = null;
@@ -458,8 +459,57 @@ public class CTMHandler {
         return method.getTileIndex(ctx);
     }
 
-    public int[] getCompactTileIndices(CTMMethod method, CTMContext ctx) {
-        return ((MethodCTMCompact)method).getCompactTileIndices(ctx);
+    public int[] getCompactTileIndices(int index) {
+        switch(index){
+            case 0: return new int[]{0, 0, 0, 0};
+            case 1: return new int[]{0, 0, 3, 3};
+            case 2: return new int[]{3, 3, 3, 3};
+            case 3: return new int[]{3, 3, 0, 0};
+            case 4: return new int[]{0, 2, 3, 4};
+            case 5: return new int[]{3, 4, 0, 2};
+            case 6: return new int[]{2, 2, 4, 4};
+            case 7: return new int[]{3, 4, 3, 4};
+            case 8: return new int[]{4, 4, 1, 4};
+            case 9: return new int[]{4, 4, 4, 1};
+            case 10: return new int[]{1, 4, 1, 1};
+            case 11: return new int[]{1, 4, 1, 4};
+            case 12: return new int[]{0, 2, 0, 2};
+            case 13: return new int[]{0, 2, 3, 1};
+            case 14: return new int[]{3, 1, 3, 1};
+            case 15: return new int[]{3, 1, 0, 2};
+            case 16: return new int[]{2, 0, 4, 3};
+            case 17: return new int[]{4, 3, 2, 0};
+            case 18: return new int[]{4, 3, 4, 3};
+            case 19: return new int[]{4, 4, 2, 2};
+            case 20: return new int[]{1, 4, 4, 4};
+            case 21: return new int[]{4, 1, 4, 4};
+            case 22: return new int[]{4, 1, 4, 1};
+            case 23: return new int[]{4, 4, 1, 1};
+            case 24: return new int[]{2, 2, 2, 2};
+            case 25: return new int[]{2, 2, 1, 1};
+            case 26: return new int[]{1, 1, 1, 1};
+            case 27: return new int[]{1, 1, 2, 2};
+            case 28: return new int[]{2, 2, 4, 1};
+            case 29: return new int[]{3, 1, 3, 4};
+            case 30: return new int[]{2, 2, 1, 4};
+            case 31: return new int[]{3, 4, 3, 1};
+            case 32: return new int[]{1, 1, 1, 4};
+            case 33: return new int[]{1, 4, 1, 1};
+            case 34: return new int[]{4, 1, 1, 4};
+            case 35: return new int[]{1, 4, 4, 1};
+            case 36: return new int[]{2, 0, 2, 0};
+            case 37: return new int[]{2, 0, 1, 3};
+            case 38: return new int[]{1, 3, 1, 3};
+            case 39: return new int[]{1, 3, 2, 0};
+            case 40: return new int[]{4, 3, 1, 3};
+            case 41: return new int[]{1, 4, 2, 2};
+            case 42: return new int[]{1, 3, 4, 3};
+            case 43: return new int[]{4, 1, 2, 2};
+            case 44: return new int[]{1, 1, 4, 1};
+            case 45: return new int[]{4, 1, 1, 1};
+            case 46: return new int[]{4, 4, 4, 4};
+            default:throw new IndexOutOfBoundsException("compact index is must be in 0 to 46");
+        }
     }
 
     public String getMethodName(CTMMethod method) {
