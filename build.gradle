@@ -16,7 +16,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: "com.github.johnrengelman.shadow"
 
 group = 'com.chikage'
-version = '0.1.0-alpha'
+version = '0.1.0-beta'
 archivesBaseName = 'MineExporteR'
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'

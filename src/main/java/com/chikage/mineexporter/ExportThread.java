@@ -46,7 +46,8 @@ public class ExportThread extends Thread {
     }
 
     public void run() {
-        long startTime = System.currentTimeMillis();
+//        long startTime = System.currentTimeMillis();
+        long countStart = System.currentTimeMillis();
         boolean noError = true;
         Main.logger.info("exporting from (" + pos1.getX() + ", " + pos1.getY() + ", " + pos1.getZ() + ") to (" + pos2.getX() + ", " + pos2.getY() + ", " + pos2.getZ() + ")");
 
@@ -66,7 +67,6 @@ public class ExportThread extends Thread {
         CTMHandler ctmHandler = new CTMHandler(rpRep);
         Main.logger.info("successfully created ctm cache.");
 
-        long countStart = System.currentTimeMillis();
 
         int blockIndex = 0;
         for (BlockPos pos: range) {
@@ -108,31 +108,17 @@ public class ExportThread extends Thread {
                 if (facing != null && !aState.shouldSideBeRendered(sender.getEntityWorld(), pos, facing)) continue;
 
                 for (BakedQuad quad : model.getQuads(aState, facing, 0)) {
-                    TextureHandler texHandler = new TextureHandler(quad.getSprite());
+                    CTMContext ctx = new CTMContext(sender.getEntityWorld(), quad, pos);
+                    TextureHandler texHandler = new TextureHandler(quad.getSprite(), ctmHandler, ctx);
 
                     String texName = texHandler.getTextureName();
 
                     BufferedImage texture;
-                    try {
-                        texture = texHandler.getBaseTextureImage(resourceManager);
-                    } catch (IOException e) {
-                        noError = false;
-                        Main.logger.error("failed to find texture image. block: " + aState.getBlock().getRegistryName().toString());
-                        e.printStackTrace();
-                        continue;
-                    }
+                    int tintRGB = -1;
 
-                    if(isCTMSupport) {
-                        CTMContext ctx = new CTMContext(sender.getEntityWorld(), quad, pos);
-                        try {
-                            String ctmName = texHandler.getConnectedImage(resourceManager, texture, ctmHandler, ctx);
-                            if (!ctmName.equals("none")) texName += "-" + ctmName;
-                        } catch (IOException | ArrayIndexOutOfBoundsException e) {
-                            noError = false;
-                            Main.logger.error("failed to find ctm image. block: " + aState.getBlock().getRegistryName().toString());
-                            e.printStackTrace();
-                        }
-                    }
+                    String ctmName = texHandler.getCTMName();
+                    if (!ctmName.equals("none")) texName += "-" + ctmName;
+
 //                        TODO colormap実装
 //                    Biome biome = sender.getEntityWorld().getBiome(pos);
 //                    float temperature = biome.getTemperature(pos);
@@ -143,8 +129,7 @@ public class ExportThread extends Thread {
 
 
                     if (quad.hasTintIndex()) {
-                        int tintRGB = getMinecraft().getBlockColors().colorMultiplier(aState, sender.getEntityWorld(), pos, quad.getTintIndex());
-                        texHandler.setColormapToImage(texture, tintRGB);
+                        tintRGB = getMinecraft().getBlockColors().colorMultiplier(aState, sender.getEntityWorld(), pos, quad.getTintIndex());
                         texName += "-" + Integer.toHexString(tintRGB);
                     }
 //                    TODO 草の側面が正しく描画されない、ctmのoverlayの様子も見ながら実装
@@ -152,6 +137,29 @@ public class ExportThread extends Thread {
 //                    同じブロック内で重なる箇所があり、かつレンダリング方法がCUTOUT系ならその面についてテクスチャをまとめる処理を入れる
 
                     if (!mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
+
+                        try {
+                            texture = texHandler.getBaseTextureImage(resourceManager);
+                        } catch (IOException e) {
+                            noError = false;
+                            Main.logger.error("failed to find texture image. block: " + aState.getBlock().getRegistryName().toString());
+                            e.printStackTrace();
+                            continue;
+                        }
+                        if (texture == null) continue;
+
+                        try {
+                            if (!ctmName.equals("none")) texHandler.setConnectedImage(resourceManager, texture, ctmHandler);
+                        } catch (IOException | ArrayIndexOutOfBoundsException e) {
+                            noError = false;
+                            Main.logger.error("failed to find ctm image. block: " + aState.getBlock().getRegistryName().toString());
+                            e.printStackTrace();
+                        }
+
+                        if (tintRGB != -1) {
+                            texHandler.setColormapToImage(texture, tintRGB);
+                        }
+
                         String texLocation = "textures/" + texName + ".png";
                         try {
                             texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
@@ -222,8 +230,8 @@ public class ExportThread extends Thread {
             sender.sendMessage(new TextComponentString(TextFormatting.YELLOW + "exported with some error. see the latest.log."));
         }
 
-        long endTime = System.currentTimeMillis();
-        sender.sendMessage(new TextComponentString("elapsed " + (endTime-startTime)/1000.0 + "s"));
+//        long endTime = System.currentTimeMillis();
+//        sender.sendMessage(new TextComponentString("elapsed " + (endTime-startTime)/1000.0 + "s"));
     }
 
     private void deleteFile(File f) {

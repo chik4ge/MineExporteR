@@ -11,6 +11,9 @@ import net.minecraft.util.ResourceLocation;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBufferByte;
+import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -26,6 +29,8 @@ public class TextureHandler {
     private int height;
     private String baseName;
     private ResourceLocation baseTexLocation;
+    private CTMMethod ctmMethod;
+    private int ctmIndex = -1;
 
     public TextureHandler(TextureAtlasSprite sprite) {
         this.width = sprite.getIconWidth();
@@ -38,21 +43,29 @@ public class TextureHandler {
         this.baseTexLocation = new ResourceLocation(rawLocation.getNamespace(), "textures/"+ rawLocation.getPath()+".png");
     }
 
-    public String getConnectedImage(IResourceManager rm, BufferedImage image, CTMHandler handler, CTMContext ctx) throws IOException{
-        CTMMethod method = handler.getMethod(ctx, baseTexLocation);
-        if (method == null) return "none";
+    public TextureHandler(TextureAtlasSprite sprite, CTMHandler ctmHandler, CTMContext ctx) {
+        this(sprite);
+        ctmMethod = ctmHandler.getMethod(ctx, baseTexLocation);
+        if (ctmMethod != null) {
+            ctmIndex = ctmHandler.getTileIndex(ctmMethod, ctx);
+        }
+    }
 
-        String methodName = handler.getMethodName(method);
-        int index = handler.getTileIndex(method, ctx);
-        if (method instanceof MethodCTMCompact){
+    public String getCTMName() {
+        if (ctmMethod == null) return "none";
+        return ctmMethod.getMethodName() + ctmIndex;
+    }
+
+    public void setConnectedImage(IResourceManager rm, BufferedImage image, CTMHandler handler) throws IOException{
+        if (ctmMethod instanceof MethodCTMCompact) {
             BufferedImage[] images = new BufferedImage[5];
-            images[0] = handler.getTileInputStream(rm, method, 0);
-            images[1] = handler.getTileInputStream(rm, method, 1);
-            images[2] = handler.getTileInputStream(rm, method, 2);
-            images[3] = handler.getTileInputStream(rm, method, 3);
-            images[4] = handler.getTileInputStream(rm, method, 4);
+            images[0] = handler.getTileBufferedImage(rm, ctmMethod, 0);
+            images[1] = handler.getTileBufferedImage(rm, ctmMethod, 1);
+            images[2] = handler.getTileBufferedImage(rm, ctmMethod, 2);
+            images[3] = handler.getTileBufferedImage(rm, ctmMethod, 3);
+            images[4] = handler.getTileBufferedImage(rm, ctmMethod, 4);
 
-            int[] indices = handler.getCompactTileIndices(method, ctx);
+            int[] indices = handler.getCompactTileIndices(ctmIndex);
 
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {
@@ -62,7 +75,7 @@ public class TextureHandler {
             }
 
         } else {
-            BufferedImage newImage = handler.getTileInputStream(rm, method, index);
+            BufferedImage newImage = handler.getTileBufferedImage(rm, ctmMethod, ctmIndex);
 
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {
@@ -70,8 +83,6 @@ public class TextureHandler {
                 }
             }
         }
-
-        return methodName + index;
     }
 
     public void setColormapToImage(BufferedImage image, int tintRGB) {
@@ -122,20 +133,37 @@ public class TextureHandler {
     public static BufferedImage getImage(IResourceManager rm, ResourceLocation location) throws IOException {
         if (texCache.containsKey(location)) return copyImage(texCache.get(location));
         else {
-            InputStream texInputStream = rm.getResource(location).getInputStream();
-            BufferedImage image = ImageIO.read(texInputStream);
-            texCache.put(location, image);
-            texInputStream.close();
-            return copyImage(image);
+            try {
+                InputStream texInputStream = rm.getResource(location).getInputStream();
+                BufferedImage image = ImageIO.read(texInputStream);
+                texCache.put(location, image);
+                texInputStream.close();
+                return copyImage(image);
+            } catch (IOException e) {
+                texCache.put(location, null);
+                throw e;
+            }
         }
     }
 
 //    quote from https://stackoverflow.com/questions/3514158/how-do-you-clone-a-bufferedimage
+//    上2つはテクスチャがおかしくなるのでボツ
+//    原因はわからない
     private static BufferedImage copyImage(BufferedImage source){
-        BufferedImage b = new BufferedImage(source.getWidth(), source.getHeight(), source.getType());
-        Graphics g = b.createGraphics();
-        g.drawImage(source, 0, 0, null);
-        g.dispose();
-        return b;
+        if (source == null) return null;
+//        BufferedImage b = new BufferedImage(source.getWidth(), source.getHeight(), source.getType());
+//        Graphics g = b.createGraphics();
+//        g.drawImage(source, 0, 0, null);
+//        g.dispose();
+//        return b;
+//        BufferedImage bi = new BufferedImage(source.getWidth(), source.getHeight(), source.getType());
+//        byte[] sourceData = ((DataBufferByte)source.getRaster().getDataBuffer()).getData();
+//        byte[] biData = ((DataBufferByte)bi.getRaster().getDataBuffer()).getData();
+//        System.arraycopy(sourceData, 0, biData, 0, sourceData.length);
+//        return bi;
+        ColorModel cm = source.getColorModel();
+        boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
+        WritableRaster raster = source.copyData(null);
+        return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
     }
 }
