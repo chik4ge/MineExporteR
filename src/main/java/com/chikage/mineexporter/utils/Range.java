@@ -13,7 +13,9 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
     int minZ;
     int maxZ;
 
-    int size;
+    public Set<int[]> chunks;
+
+    long size;
     BlockPos index;
 
     public Range(BlockPos pos1, BlockPos pos2) {
@@ -26,9 +28,18 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
         minZ = Math.min(pos1.getZ(), pos2.getZ());
         maxZ = Math.max(pos1.getZ(), pos2.getZ());
 
-        size = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+        size = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         index = new BlockPos(minX, minY, minZ);
+
+        chunks = new HashSet();
+        for (int i=(minX>>4); i<=(maxX>>4); i++) {
+            for (int j=(minZ>>4); j<=(maxZ>>4); j++) {
+                chunks.add(new int[]{i,j});
+            }
+        }
     }
+
+
 
     @Override
     public boolean hasNext() {
@@ -91,7 +102,7 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
         return maxZ;
     }
 
-    public int getSize() {
+    public long getSize() {
         return size;
     }
 }
