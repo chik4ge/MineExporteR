@@ -22,10 +22,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
@@ -76,12 +73,13 @@ public class ExportThread extends Thread {
 
         ExecutorService executor = Executors.newFixedThreadPool(5);
         try {
-            while (!range.chunks.isEmpty()) {
+            Set<int[]> processed = new HashSet<>();
+            while (!range.chunks.equals(processed)) {
                 for (int[] chunkXZ : range.chunks) {
                     Chunk chunk = provider.getLoadedChunk(chunkXZ[0], chunkXZ[1]);
                     if (chunk != null && chunk.isLoaded()) {
                         executor.execute(new ExportChunk(chunk, vertices, uvs, faces));
-                        range.chunks.remove(chunkXZ);
+                        processed.add(chunkXZ);
                     }
                 }
             }
