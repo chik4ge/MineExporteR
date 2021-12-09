@@ -1,37 +1,32 @@
 package com.chikage.mineexporter;
 
-import com.chikage.mineexporter.ctm.CTMContext;
 import com.chikage.mineexporter.ctm.CTMHandler;
+import com.chikage.mineexporter.utils.Face;
 import com.chikage.mineexporter.utils.Range;
+import com.chikage.mineexporter.utils.UV;
+import com.chikage.mineexporter.utils.Vertex;
 import de.javagl.obj.*;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.BlockModelShapes;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.block.model.IBakedModel;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.ResourcePackRepository;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.IBlockAccess;
-import org.apache.commons.lang3.ArrayUtils;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
 
-import java.awt.image.BufferedImage;
 import java.io.*;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.*;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
 
@@ -40,6 +35,7 @@ public class ExportThread extends Thread {
     private final ICommandSender sender;
     private final BlockPos pos1;
     private final BlockPos pos2;
+    private final int dimensionId;
 
     private final boolean isCTMSupport = true;
 
@@ -48,6 +44,7 @@ public class ExportThread extends Thread {
         this.server = server;
         this.pos1 = pos1;
         this.pos2 = pos2;
+        this.dimensionId = sender.getEntityWorld().provider.getDimension();
     }
 
     public void run() {
@@ -63,7 +60,7 @@ public class ExportThread extends Thread {
         ResourcePackRepository rpRep = getMinecraft().getResourcePackRepository();
         BlockModelShapes bms = getMinecraft().getBlockRendererDispatcher().getBlockModelShapes();
         Obj obj = Objs.create();
-        List<Mtl> mtls = new ArrayList<>();
+        CopyOnWriteArraySet<Mtl> mtls = new CopyOnWriteArraySet<>();
         int faceindex = 0;
 
         Range range = new Range(pos1, pos2);
@@ -72,8 +69,62 @@ public class ExportThread extends Thread {
         CTMHandler ctmHandler = new CTMHandler(rpRep);
         Main.logger.info("successfully created ctm cache.");
 
+        IChunkProvider provider = server.getWorld(dimensionId).getChunkProvider();
+        CopyOnWriteArraySet<Vertex> vertices = new CopyOnWriteArraySet<>();
+        CopyOnWriteArraySet<UV> uvs = new CopyOnWriteArraySet<>();
+        ConcurrentHashMap<String, ArrayList<Face>> faces = new ConcurrentHashMap<>();
 
-        int blockIndex = 0;
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        try {
+            while (!range.chunks.isEmpty()) {
+                for (int[] chunkXZ : range.chunks) {
+                    Chunk chunk = provider.getLoadedChunk(chunkXZ[0], chunkXZ[1]);
+                    if (chunk != null && chunk.isLoaded()) {
+                        executor.execute(new ExportChunk(chunk, vertices, uvs, faces));
+                        range.chunks.remove(chunkXZ);
+                    }
+                }
+            }
+            executor.shutdown();
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        HashMap<Vertex, Integer> vertexIdMap = new HashMap<>();
+        int id = 0;
+        for (Vertex vertex : vertices) {
+            if (!vertexIdMap.containsKey(vertex)) {
+                obj.addVertex(vertex.x, vertex.y, vertex.z);
+                vertexIdMap.put(vertex, id);
+                id++;
+            }
+        }
+
+        HashMap<UV, Integer> uvIdMap = new HashMap<>();
+        id = 0;
+        for (UV uv : uvs) {
+            if (!uvIdMap.containsKey(uv)) {
+                obj.addTexCoord(uv.u, uv.v);
+                uvIdMap.put(uv, id);
+                id++;
+            }
+        }
+
+        for (Map.Entry<String, ArrayList<Face>> facesOfMtl : faces.entrySet()) {
+            obj.setActiveMaterialGroupName(facesOfMtl.getKey());
+            for (Face face : facesOfMtl.getValue()) {
+                int[] vertexIndices = new int[4];
+                int[] uvIndices = new int[4];
+                for (int i=0; i<4; i++) {
+                    vertexIndices[i] = vertexIdMap.get(face.vertex[i]);
+                    uvIndices[i] = uvIdMap.get(face.uv[i]);
+                }
+                obj.addFace(vertexIndices, uvIndices, null);
+            }
+        }
+
+        /*long blockIndex = 0;
         for (BlockPos pos: range) {
             blockIndex++;
 
@@ -413,7 +464,7 @@ public class ExportThread extends Thread {
                             {
                                 IBlockState lavaState = access.getBlockState(blockpos);
 
-                                if (lavaState.getBlockFaceShape(access, blockpos, EnumFacing.VALUES[i1+2].getOpposite()) == net.minecraft.block.state.BlockFaceShape.SOLID)
+                                if (lavaState.getBlockFaceShape(access, blockpos, EnumFacing.VALUES[i1+2].getOpposite()) == BlockFaceShape.SOLID)
                                 {
                                     textureatlassprite1 = atlasSpriteWaterOverlay;
                                 }
@@ -529,7 +580,7 @@ public class ExportThread extends Thread {
                 }
             }
 
-        }
+        }*/
 
         File objFile = new File("MineExporteR/export.obj");
         File mtlFile = new File("MineExporteR/export.mtl");
