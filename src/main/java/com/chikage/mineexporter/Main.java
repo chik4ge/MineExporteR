@@ -39,7 +39,7 @@ public class Main {
      * The registry events below will have fired prior to entry to this method.
      */
     @Mod.EventHandler
-    public void preinit(FMLPreInitializationEvent event) {
+    public void preInit(FMLPreInitializationEvent event) {
         logger = event.getModLog();
     }
 
@@ -64,7 +64,7 @@ public class Main {
      * This is the final initialization event. Register actions from other mods here
      */
     @Mod.EventHandler
-    public void postinit(FMLPostInitializationEvent event) {
+    public void postInit(FMLPostInitializationEvent event) {
 
     }
 }
