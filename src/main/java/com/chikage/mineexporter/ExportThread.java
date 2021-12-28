@@ -78,7 +78,7 @@ public class ExportThread extends Thread {
                 for (int[] chunkXZ : range.chunks) {
                     Chunk chunk = provider.getLoadedChunk(chunkXZ[0], chunkXZ[1]);
                     if (chunk != null && chunk.isLoaded()) {
-                        executor.execute(new ExportChunk(chunk, vertices, uvs, faces));
+                        executor.execute(new ExportChunk(range, chunk, vertices, uvs, faces));
                         processed.add(chunkXZ);
                     }
                 }
