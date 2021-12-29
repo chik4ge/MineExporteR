@@ -1,6 +1,7 @@
 package com.chikage.mineexporter.utils;
 
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.chunk.Chunk;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -12,8 +13,6 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
     int maxY;
     int minZ;
     int maxZ;
-
-    public Set<int[]> chunks;
 
     long size;
     BlockPos index;
@@ -30,16 +29,27 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
 
         size = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         index = new BlockPos(minX, minY, minZ);
-
-        chunks = new HashSet();
-        for (int i=(minX>>4); i<=(maxX>>4); i++) {
-            for (int j=(minZ>>4); j<=(maxZ>>4); j++) {
-                chunks.add(new int[]{i,j});
-            }
-        }
     }
 
+    public Set<int[]> getChunks() {
+        Set<int[]> res = new HashSet();
+        for (int i=(minX>>4); i<=(maxX>>4); i++) {
+            for (int j=(minZ>>4); j<=(maxZ>>4); j++) {
+                res.add(new int[]{i,j});
+            }
+        }
+        return res;
+    }
 
+//    TODO implement
+    public Range intersect(Range inRange) {
+        return null;
+    }
+
+//    TODO implement
+    public static Range toRangeFromChunk(Chunk chunk) {
+        return null;
+    }
 
     @Override
     public boolean hasNext() {
@@ -47,7 +57,6 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
     }
 
     private BlockPos proc(BlockPos pos) {
-        ArrayList a;
         if (pos.getX() < maxX) {
             return pos.add(1, 0, 0);
         } else if (pos.getY() < maxY){
@@ -78,28 +87,8 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
         return this;
     }
 
-    public int getMinX() {
-        return minX;
-    }
-
-    public int getMinY() {
-        return minY;
-    }
-
-    public int getMinZ() {
-        return minZ;
-    }
-
-    public int getMaxX() {
-        return maxX;
-    }
-
-    public int getMaxY() {
-        return maxY;
-    }
-
-    public int getMaxZ() {
-        return maxZ;
+    public BlockPos getOrigin() {
+        return new BlockPos(minX, minY, minZ);
     }
 
     public long getSize() {
