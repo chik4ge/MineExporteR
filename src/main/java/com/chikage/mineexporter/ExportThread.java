@@ -1,5 +1,6 @@
 package com.chikage.mineexporter;
 
+import com.chikage.mineexporter.ctm.CTMHandler;
 import com.chikage.mineexporter.utils.*;
 import de.javagl.obj.*;
 import net.minecraft.command.ICommandSender;
@@ -45,10 +46,10 @@ public class ExportThread extends Thread {
 
         Set<Vertex> vertices = new CopyOnWriteArraySet<>();
         Set<UV> uvs = new CopyOnWriteArraySet<>();
-        Map<String, List<Face>> faces = new ConcurrentHashMap<>();
+        Map<String, Set<Face>> faces = new ConcurrentHashMap<>();
 
         Obj obj = Objs.create();
-        CopyOnWriteArraySet<Mtl> mtls = new CopyOnWriteArraySet<>();
+        Set<Mtl> mtls = new CopyOnWriteArraySet<>();
 
         Range range = new Range(pos1, pos2);
 
@@ -63,12 +64,9 @@ public class ExportThread extends Thread {
 
                 vertices,
                 uvs,
-                faces
+                faces,
+                mtls
                 );
-
-//        Main.logger.info("creating ctm cache...");
-//        CTMHandler ctmHandler = new CTMHandler(rpRep);
-//        Main.logger.info("successfully created ctm cache.");
 
         IChunkProvider provider = ((WorldServer)expCtx.worldIn).getChunkProvider();
 
@@ -112,7 +110,7 @@ public class ExportThread extends Thread {
             }
         }
 
-        for (Map.Entry<String, List<Face>> facesOfMtl : faces.entrySet()) {
+        for (Map.Entry<String, Set<Face>> facesOfMtl : faces.entrySet()) {
             obj.setActiveMaterialGroupName(facesOfMtl.getKey());
             for (Face face : facesOfMtl.getValue()) {
                 int[] vertexIndices = new int[4];

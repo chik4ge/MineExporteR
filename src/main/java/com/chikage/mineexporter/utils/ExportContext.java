@@ -1,5 +1,8 @@
 package com.chikage.mineexporter.utils;
 
+import com.chikage.mineexporter.Main;
+import com.chikage.mineexporter.ctm.CTMHandler;
+import de.javagl.obj.Mtl;
 import net.minecraft.client.renderer.BlockModelShapes;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.ResourcePackRepository;
@@ -10,9 +13,11 @@ import java.util.Map;
 import java.util.Set;
 
 public class ExportContext {
-    public final IResourceManager resMgr;
-    public final ResourcePackRepository respRep;
+    public final IResourceManager rm;
+    public final ResourcePackRepository rpr;
     public final BlockModelShapes bms;
+
+    public final CTMHandler ctmHandler;
 
     public final IBlockAccess worldIn;
 
@@ -20,11 +25,12 @@ public class ExportContext {
 
     public final Set<Vertex> vertices;
     public final Set<UV> uvs;
-    public final Map<String, List<Face>> faces;
+    public final Map<String, Set<Face>> faces;
+    public final Set<Mtl> mtls;
 
     public ExportContext(
-            IResourceManager resMgr,
-            ResourcePackRepository respRep,
+            IResourceManager rm,
+            ResourcePackRepository rpr,
             BlockModelShapes bms,
 
             IBlockAccess worldIn,
@@ -33,12 +39,17 @@ public class ExportContext {
 
             Set<Vertex> vertices,
             Set<UV> uvs,
-            Map<String, List<Face>> faces
+            Map<String, Set<Face>> faces,
+            Set<Mtl> mtls
             ) {
 
-        this.resMgr = resMgr;
-        this.respRep = respRep;
+        this.rm = rm;
+        this.rpr = rpr;
         this.bms = bms;
+
+        Main.logger.info("creating ctm cache...");
+        this.ctmHandler = new CTMHandler(rpr);
+        Main.logger.info("successfully created ctm cache.");
 
         this.worldIn = worldIn;
 
@@ -47,5 +58,6 @@ public class ExportContext {
         this.vertices = vertices;
         this.uvs = uvs;
         this.faces = faces;
+        this.mtls = mtls;
     }
 }

@@ -30,7 +30,8 @@ import java.util.zip.ZipInputStream;
 
 //CTM処理の大元
 //各処理への指示、データの総括、ExportThreadとのやり取りはここを通じて行う
-//TODO ブロックごとにインスタンスを生成するように、リソパ変更時にmethodsの変更を行う
+// TODO ブロックごとにインスタンスを生成するように
+// TODO リソパ変更時にmethodsの変更を行う
 public class CTMHandler {
     ResourcePackRepository rpRep;
 
