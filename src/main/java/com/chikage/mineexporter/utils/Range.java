@@ -41,14 +41,25 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
         return res;
     }
 
-//    TODO implement
     public Range intersect(Range inRange) {
-        return null;
+        int minx = Math.min(this.minX, inRange.minX);
+        int maxx = Math.max(this.maxX, inRange.maxX);
+        int miny = Math.min(this.minY, inRange.minY);
+        int maxy = Math.max(this.maxY, inRange.maxY);
+        int minz = Math.min(this.minZ, inRange.minZ);
+        int maxz = Math.max(this.maxZ, inRange.maxZ);
+
+        return new Range(
+                new BlockPos(minx, miny, minz),
+                new BlockPos(maxx, maxy, maxz)
+        );
     }
 
-//    TODO implement
     public static Range toRangeFromChunk(Chunk chunk) {
-        return null;
+        return new Range(
+                new BlockPos(chunk.x, 0, chunk.z),
+                new BlockPos(chunk.x+15, 255, chunk.z+15)
+        );
     }
 
     @Override
