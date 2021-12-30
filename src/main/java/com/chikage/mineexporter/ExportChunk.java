@@ -51,5 +51,6 @@ public class ExportChunk implements Runnable{
                 exporter.export(expCtx, state, pos);
             }
         }
+        Main.logger.info("finished import chunk at " + chunk.x +"," + chunk.z);
     }
 }
