@@ -31,6 +31,14 @@ public class CommandMexp implements IClientCommand {
         aliases.add("mineexport");
     }
 
+    public BlockPos getPos1() {
+        return pos1;
+    }
+
+    public BlockPos getPos2() {
+        return pos2;
+    }
+
     @Override
     public String getName() {
         return "mineexport";
