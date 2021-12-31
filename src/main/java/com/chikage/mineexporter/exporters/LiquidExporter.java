@@ -1,88 +1,118 @@
 package com.chikage.mineexporter.exporters;
 
+import com.chikage.mineexporter.Main;
+import com.chikage.mineexporter.TextureHandler;
 import com.chikage.mineexporter.utils.ExportContext;
+import com.chikage.mineexporter.utils.Face;
+import com.chikage.mineexporter.utils.UV;
+import com.chikage.mineexporter.utils.Vertex;
+import de.javagl.obj.Mtl;
+import de.javagl.obj.Mtls;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.IBlockAccess;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.stream.Collectors;
+
+import static net.minecraft.client.Minecraft.getMinecraft;
+
 public class LiquidExporter extends BlockExporter{
+    static final TextureAtlasSprite[] atlasSpritesLava = new TextureAtlasSprite[2];;
+    static final TextureAtlasSprite[] atlasSpritesWater = new TextureAtlasSprite[2];;
+    static final TextureAtlasSprite atlasSpriteWaterOverlay;
+
+    static {
+        TextureMap texturemap = getMinecraft().getTextureMapBlocks();
+        atlasSpritesLava[0] = texturemap.getAtlasSprite("minecraft:blocks/lava_still");
+        atlasSpritesLava[1] = texturemap.getAtlasSprite("minecraft:blocks/lava_flow");
+        atlasSpritesWater[0] = texturemap.getAtlasSprite("minecraft:blocks/water_still");
+        atlasSpritesWater[1] = texturemap.getAtlasSprite("minecraft:blocks/water_flow");
+        atlasSpriteWaterOverlay = texturemap.getAtlasSprite("minecraft:blocks/water_overlay");
+    }
+
+
     public LiquidExporter() {
     }
 
 //    TODO implement
     @Override
     public boolean export(ExportContext expCtx, IBlockState state, BlockPos pos) {
-/*
         TextureHandler texHandler;
 
-        TextureAtlasSprite[] atlasSpritesLava = new TextureAtlasSprite[2];
-        TextureAtlasSprite[] atlasSpritesWater = new TextureAtlasSprite[2];
-        TextureMap texturemap = getMinecraft().getTextureMapBlocks();
-        atlasSpritesLava[0] = texturemap.getAtlasSprite("minecraft:blocks/lava_still");
-        atlasSpritesLava[1] = texturemap.getAtlasSprite("minecraft:blocks/lava_flow");
-        atlasSpritesWater[0] = texturemap.getAtlasSprite("minecraft:blocks/water_still");
-        atlasSpritesWater[1] = texturemap.getAtlasSprite("minecraft:blocks/water_flow");
-        TextureAtlasSprite atlasSpriteWaterOverlay = texturemap.getAtlasSprite("minecraft:blocks/water_overlay");
-
 //                    BlockFluidRenderほぼそのまま実装
-//                    BlockLiquid blockliquid = (BlockLiquid)aState.getBlock();
-        boolean isLava = aState.getMaterial() == Material.LAVA;
+//                    BlockLiquid blockliquid = (BlockLiquid)state.getBlock();
+        boolean isLava = state.getMaterial() == Material.LAVA;
         TextureAtlasSprite[] atextureatlassprite = isLava ? atlasSpritesLava : atlasSpritesWater;
-        IBlockAccess access = sender.getEntityWorld();
-//                    int tintRGB = getMinecraft().getBlockColors().colorMultiplier(aState, sender.getEntityWorld(), pos, 0);
+//                    int tintRGB = getMinecraft().getBlockColors().colorMultiplier(state, sender.getEntityWorld(), pos, 0);
 //                    float tintR = (float)(tintRGB >> 16 & 255) / 255.0F;
 //                    float tintG = (float)(tintRGB >> 8 & 255) / 255.0F;
 //                    float tintB = (float)(tintRGB & 255) / 255.0F;
 
-        boolean renderUP = aState.shouldSideBeRendered(access, pos, EnumFacing.UP);
-        boolean renderDOWN = aState.shouldSideBeRendered(access, pos, EnumFacing.DOWN);
+        boolean renderUP = state.shouldSideBeRendered(expCtx.worldIn, pos, EnumFacing.UP);
+        boolean renderDOWN = state.shouldSideBeRendered(expCtx.worldIn, pos, EnumFacing.DOWN);
         boolean[] renderSIDEs = new boolean[] {
-                aState.shouldSideBeRendered(access, pos, EnumFacing.NORTH),
-                aState.shouldSideBeRendered(access, pos, EnumFacing.SOUTH),
-                aState.shouldSideBeRendered(access, pos, EnumFacing.WEST),
-                aState.shouldSideBeRendered(access, pos, EnumFacing.EAST)
+                state.shouldSideBeRendered(expCtx.worldIn, pos, EnumFacing.NORTH),
+                state.shouldSideBeRendered(expCtx.worldIn, pos, EnumFacing.SOUTH),
+                state.shouldSideBeRendered(expCtx.worldIn, pos, EnumFacing.WEST),
+                state.shouldSideBeRendered(expCtx.worldIn, pos, EnumFacing.EAST)
         };
 
         if (!renderUP && !renderDOWN && !renderSIDEs[0] && !renderSIDEs[1] && !renderSIDEs[2] && !renderSIDEs[3]) {
-            continue;
+            return true;
+//            continue;
         } else {
-            Material material = aState.getMaterial();
-            float NWy = getFluidHeight(access, pos, material);
-            float SWy = getFluidHeight(access, pos.south(), material);
-            float SEy = getFluidHeight(access, pos.east().south(), material);
-            float NEy = getFluidHeight(access, pos.east(), material);
+            Material material = state.getMaterial();
+            float NWy = getFluidHeight(expCtx.worldIn, pos, material);
+            float SWy = getFluidHeight(expCtx.worldIn, pos.south(), material);
+            float SEy = getFluidHeight(expCtx.worldIn, pos.east().south(), material);
+            float NEy = getFluidHeight(expCtx.worldIn, pos.east(), material);
 
             if (renderUP) {
-                float slopeAngle = BlockLiquid.getSlopeAngle(access, pos, material, aState);
+                float slopeAngle = BlockLiquid.getSlopeAngle(expCtx.worldIn, pos, material, state);
                 TextureAtlasSprite textureatlassprite = slopeAngle > -999.0F ? atextureatlassprite[1] : atextureatlassprite[0];
                 texHandler = new TextureHandler(textureatlassprite);
                 String texName = texHandler.getTextureName();
-                if (!mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
+                if (!expCtx.mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
                     BufferedImage texture;
                     try {
-                        texture = texHandler.getBaseTextureImage(resourceManager);
+                        texture = texHandler.getBaseTextureImage(expCtx.rm);
                     } catch (IOException e) {
-                        noError = false;
-                        Main.logger.error("failed to find texture image. block: " + aState.getBlock().getRegistryName().toString());
+//                        noError = false;
+                        Main.logger.error("failed to find texture image. block: " + state.getBlock().getRegistryName().toString());
                         e.printStackTrace();
-                        continue;
+                        return false;
+//                        continue;
                     }
-                    if (texture == null) continue;
+                    if (texture == null) return false;
 
                     String texLocation = "textures/" + texName + ".png";
                     try {
                         texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
                     } catch (IOException e) {
-                        noError = false;
+//                        noError = false;
                         Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
                         e.printStackTrace();
+                        return false;
                     }
 
                     Mtl mtl = Mtls.create(texName);
                     mtl.setMapKd(texLocation);
-                    mtls.add(mtl);
+                    expCtx.mtls.add(mtl);
                 }
 
                 NWy -= 0.001F;
@@ -118,71 +148,86 @@ public class LiquidExporter extends BlockExporter{
                     NEu = textureatlassprite.getInterpolatedU(8.0F + (f22 - f21) * 16.0F);
                     NEv = textureatlassprite.getInterpolatedV(8.0F + (-f22 - f21) * 16.0F);
                 }
-                obj.addVertex((float) xOffset, (float) yOffset + NWy, (float) zOffset);
-//                            obj.addNormal(0, 0, 0);
-                obj.addTexCoord(NWu, NWv);
-                obj.addVertex((float) xOffset, (float) yOffset + SWy, (float) zOffset + 1F);
-//                            obj.addNormal(0, 0, 0);
-                obj.addTexCoord(SWu, SWv);
-                obj.addVertex((float) xOffset + 1F, (float) yOffset + SEy, (float) zOffset + 1F);
-//                            obj.addNormal(0, 0, 0);
-                obj.addTexCoord(SEu, SEv);
-                obj.addVertex((float) xOffset + 1F, (float) yOffset + NEy, (float) zOffset);
-//                            obj.addNormal(0, 0, 0);
-                obj.addTexCoord(NEu, NEv);
-                obj.setActiveMaterialGroupName(texName);
-                obj.addFaceWithTexCoords(4 * faceindex, 4 * faceindex + 1, 4 * faceindex + 2, 4 * faceindex + 3);
-                faceindex += 1;
+
+                Vec3d offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
+                Vertex v1 = new Vertex((float) offset.x, (float) offset.y + NWy, (float) offset.z);
+                Vertex v2 = new Vertex((float) offset.x, (float) offset.y + SWy, (float) offset.z + 1F);
+                Vertex v3 = new Vertex((float) offset.x + 1F, (float) offset.y + SEy, (float) offset.z + 1F);
+                Vertex v4 = new Vertex((float) offset.x + 1F, (float) offset.y + NEy, (float) offset.z);
+                UV uv1 = new UV(NWu, NWv);
+                UV uv2 = new UV(SWu, SWv);
+                UV uv3 = new UV(SEu, SEv);
+                UV uv4 = new UV(NEu, NEv);
+                Vertex[] vertices = {v1, v2, v3, v4};
+                UV[] uvs = {uv1, uv2, uv3, uv4};
+
+                Collections.addAll(expCtx.vertices, vertices);
+                Collections.addAll(expCtx.uvs, uvs);
+
+                Face face = new Face(vertices, uvs);
+                if (expCtx.faces.containsKey(texName)) {
+                    expCtx.faces.get(texName).add(face);
+                } else {
+                    expCtx.faces.put(texName, new HashSet<>(Arrays.asList(face)));
+                }
             }
 
             if (renderDOWN) {
                 texHandler = new TextureHandler(atextureatlassprite[0]);
                 String texName = texHandler.getTextureName();
-                if (!mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
+                if (!expCtx.mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
                     BufferedImage texture;
                     try {
-                        texture = texHandler.getBaseTextureImage(resourceManager);
+                        texture = texHandler.getBaseTextureImage(expCtx.rm);
                     } catch (IOException e) {
-                        noError = false;
-                        Main.logger.error("failed to find texture image. block: " + aState.getBlock().getRegistryName().toString());
+//                        noError = false;
+                        Main.logger.error("failed to find texture image. block: " + state.getBlock().getRegistryName().toString());
                         e.printStackTrace();
-                        continue;
+                        return false;
                     }
-                    if (texture == null) continue;
+                    if (texture == null) return false;
 
                     String texLocation = "textures/" + texName + ".png";
                     try {
                         texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
                     } catch (IOException e) {
-                        noError = false;
+//                        noError = false;
                         Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
                         e.printStackTrace();
+                        return false;
                     }
 
                     Mtl mtl = Mtls.create(texName);
                     mtl.setMapKd(texLocation);
-                    mtls.add(mtl);
+                    expCtx.mtls.add(mtl);
                 }
 
                 float minU = atextureatlassprite[0].getMinU();
                 float maxU = atextureatlassprite[0].getMaxU();
                 float minV = atextureatlassprite[0].getMinV();
                 float maxV = atextureatlassprite[0].getMaxV();
-                obj.addVertex((float) xOffset, (float) yOffset, (float) zOffset + 1F);
-//                            obj.addNormal(0, 0, 0);
-                obj.addTexCoord(minU, maxV);
-                obj.addVertex((float) xOffset, (float) yOffset, (float) zOffset);
-//                            obj.addNormal(0, 0, 0);
-                obj.addTexCoord(minU, minV);
-                obj.addVertex((float) xOffset + 1F, (float) yOffset, (float) zOffset);
-//                            obj.addNormal(0, 0, 0);
-                obj.addTexCoord(maxU, minV);
-                obj.addVertex((float) xOffset + 1F, (float) yOffset, (float) zOffset + 1F);
-//                            obj.addNormal(0, 0, 0);
-                obj.addTexCoord(maxU, maxV);
-                obj.setActiveMaterialGroupName(texName);
-                obj.addFaceWithTexCoords(4 * faceindex, 4 * faceindex + 1, 4 * faceindex + 2, 4 * faceindex + 3);
-                faceindex += 1;
+
+                Vec3d offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
+                Vertex v1 = new Vertex((float) offset.x, (float) offset.y, (float) offset.z + 1F);
+                Vertex v2 = new Vertex((float) offset.x, (float) offset.y, (float) offset.z);
+                Vertex v3 = new Vertex((float) offset.x + 1F, (float) offset.y, (float) offset.z);
+                Vertex v4 = new Vertex((float) offset.x + 1F, (float) offset.y, (float) offset.z + 1F);
+                UV uv1 = new UV(minU, maxV);
+                UV uv2 = new UV(minU, minV);
+                UV uv3 = new UV(maxU, minV);
+                UV uv4 = new UV(maxU, maxV);
+                Vertex[] vertices = {v1, v2, v3, v4};
+                UV[] uvs = {uv1, uv2, uv3, uv4};
+
+                Collections.addAll(expCtx.vertices, vertices);
+                Collections.addAll(expCtx.uvs, uvs);
+
+                Face face = new Face(vertices, uvs);
+                if (expCtx.faces.containsKey(texName)) {
+                    expCtx.faces.get(texName).add(face);
+                } else {
+                    expCtx.faces.put(texName, new HashSet<>(Arrays.asList(face)));
+                }
             }
 
             for (int i1 = 0; i1 < 4; ++i1) {
@@ -215,9 +260,9 @@ public class LiquidExporter extends BlockExporter{
 
                 if (!isLava)
                 {
-                    IBlockState lavaState = access.getBlockState(blockpos);
+                    IBlockState lavstate = expCtx.worldIn.getBlockState(blockpos);
 
-                    if (lavaState.getBlockFaceShape(access, blockpos, EnumFacing.VALUES[i1+2].getOpposite()) == BlockFaceShape.SOLID)
+                    if (lavstate.getBlockFaceShape(expCtx.worldIn, blockpos, EnumFacing.VALUES[i1+2].getOpposite()) == BlockFaceShape.SOLID)
                     {
                         textureatlassprite1 = atlasSpriteWaterOverlay;
                     }
@@ -225,30 +270,31 @@ public class LiquidExporter extends BlockExporter{
 
                 texHandler = new TextureHandler(textureatlassprite1);
                 String texName = texHandler.getTextureName();
-                if (!mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
+                if (!expCtx.mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
                     BufferedImage texture;
                     try {
-                        texture = texHandler.getBaseTextureImage(resourceManager);
+                        texture = texHandler.getBaseTextureImage(expCtx.rm);
                     } catch (IOException e) {
-                        noError = false;
-                        Main.logger.error("failed to find texture image. block: " + aState.getBlock().getRegistryName().toString());
+//                        noError = false;
+                        Main.logger.error("failed to find texture image. block: " + state.getBlock().getRegistryName().toString());
                         e.printStackTrace();
-                        continue;
+                        return false;
                     }
-                    if (texture == null) continue;
+                    if (texture == null) return false;
 
                     String texLocation = "textures/" + texName + ".png";
                     try {
                         texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
                     } catch (IOException e) {
-                        noError = false;
+//                        noError = false;
                         Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
                         e.printStackTrace();
+                        return false;
                     }
 
                     Mtl mtl = Mtls.create(texName);
                     mtl.setMapKd(texLocation);
-                    mtls.add(mtl);
+                    expCtx.mtls.add(mtl);
                 }
 
                 if (renderSIDEs[i1])
@@ -260,41 +306,42 @@ public class LiquidExporter extends BlockExporter{
                     double d5;
                     double d6;
 
+                    Vec3d offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
                     if (i1 == 0)
                     {
                         f39 = NWy;
                         f40 = NEy;
-                        d3 = xOffset;
-                        d5 = xOffset + 1.0D;
-                        d4 = zOffset + 0.0010000000474974513D;
-                        d6 = zOffset + 0.0010000000474974513D;
+                        d3 = offset.x;
+                        d5 = offset.x + 1.0D;
+                        d4 = offset.z + 0.0010000000474974513D;
+                        d6 = offset.z + 0.0010000000474974513D;
                     }
                     else if (i1 == 1)
                     {
                         f39 = SEy;
                         f40 = SWy;
-                        d3 = xOffset + 1.0D;
-                        d5 = xOffset;
-                        d4 = zOffset + 1.0D - 0.0010000000474974513D;
-                        d6 = zOffset + 1.0D - 0.0010000000474974513D;
+                        d3 = offset.x + 1.0D;
+                        d5 = offset.x;
+                        d4 = offset.z + 1.0D - 0.0010000000474974513D;
+                        d6 = offset.z + 1.0D - 0.0010000000474974513D;
                     }
                     else if (i1 == 2)
                     {
                         f39 = SWy;
                         f40 = NWy;
-                        d3 = xOffset + 0.0010000000474974513D;
-                        d5 = xOffset + 0.0010000000474974513D;
-                        d4 = zOffset + 1.0D;
-                        d6 = zOffset;
+                        d3 = offset.x + 0.0010000000474974513D;
+                        d5 = offset.x + 0.0010000000474974513D;
+                        d4 = offset.z + 1.0D;
+                        d6 = offset.z;
                     }
                     else
                     {
                         f39 = NEy;
                         f40 = SEy;
-                        d3 = xOffset + 1.0D - 0.0010000000474974513D;
-                        d5 = xOffset + 1.0D - 0.0010000000474974513D;
-                        d4 = zOffset;
-                        d6 = zOffset + 1.0D;
+                        d3 = offset.x + 1.0D - 0.0010000000474974513D;
+                        d5 = offset.x + 1.0D - 0.0010000000474974513D;
+                        d4 = offset.z;
+                        d6 = offset.z + 1.0D;
                     }
 
                     float f41 = textureatlassprite1.getInterpolatedU(0.0D);
@@ -302,30 +349,34 @@ public class LiquidExporter extends BlockExporter{
                     float f28 = textureatlassprite1.getInterpolatedV((1.0F - f39) * 16.0F * 0.5F);
                     float f29 = textureatlassprite1.getInterpolatedV((1.0F - f40) * 16.0F * 0.5F);
                     float f30 = textureatlassprite1.getInterpolatedV(8.0D);
-//                                int j = aState.getPackedLightmapCoords(access, blockpos);
+//                                int j = state.getPackedLightmapCoords(access, blockpos);
 //                                int k = j >> 16 & 65535;
 //                                int l = j & 65535;
 //                                float f31 = i1 < 2 ? 0.8F : 0.6F;
 
-                    obj.addVertex((float) d3, (float) yOffset + f39, (float) d4);
-//                                obj.addNormal(0, 0, 0);
-                    obj.addTexCoord(f41, f28);
-                    obj.addVertex((float) d5, (float) yOffset + f40, (float) d6);
-//                                obj.addNormal(0, 0, 0);
-                    obj.addTexCoord(f27, f29);
-                    obj.addVertex((float) d5, (float) yOffset, (float) d6);
-//                                obj.addNormal(0, 0, 0);
-                    obj.addTexCoord(f27, f30);
-                    obj.addVertex((float) d3, (float) yOffset, (float) d4);
-//                                obj.addNormal(0, 0, 0);
-                    obj.addTexCoord(f41, f30);
-                    obj.setActiveMaterialGroupName(texName);
-                    obj.addFaceWithTexCoords(4 * faceindex, 4 * faceindex + 1, 4 * faceindex + 2, 4 * faceindex + 3);
-                    faceindex += 1;
+                    Vertex v1 = new Vertex((float) d3, (float) offset.y + f39, (float) d4);
+                    Vertex v2 = new Vertex((float) d5, (float) offset.y + f40, (float) d6);
+                    Vertex v3 = new Vertex((float) d5, (float) offset.y, (float) d6);
+                    Vertex v4 = new Vertex((float) d3, (float) offset.y, (float) d4);
+                    UV uv1 = new UV(f41, f28);
+                    UV uv2 = new UV(f27, f29);
+                    UV uv3 = new UV(f27, f30);
+                    UV uv4 = new UV(f41, f30);
+                    Vertex[] vertices = {v1, v2, v3, v4};
+                    UV[] uvs = {uv1, uv2, uv3, uv4};
+
+                    Collections.addAll(expCtx.vertices, vertices);
+                    Collections.addAll(expCtx.uvs, uvs);
+
+                    Face face = new Face(vertices, uvs);
+                    if (expCtx.faces.containsKey(texName)) {
+                        expCtx.faces.get(texName).add(face);
+                    } else {
+                        expCtx.faces.put(texName, new HashSet<>(Arrays.asList(face)));
+                    }
                 }
             }
         }
-*/
         return true;
     }
 
