@@ -27,14 +27,21 @@ public class TextureHandler {
 
     private int width;
     private int height;
+    private int frameCount = -1;
     private String baseName;
     private ResourceLocation baseTexLocation;
     private CTMMethod ctmMethod;
     private int ctmIndex = -1;
+    private int animationIndex = 0;
 
     public TextureHandler(TextureAtlasSprite sprite) {
         this.width = sprite.getIconWidth();
         this.height = sprite.getIconHeight();
+
+        if (sprite.hasAnimationMetadata()) {
+            frameCount = sprite.getFrameCount();
+            height = width;
+        }
 
         String iconName = sprite.getIconName();
         this.baseName = getSplitLast(iconName, "/");
@@ -165,5 +172,32 @@ public class TextureHandler {
         boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
         WritableRaster raster = source.copyData(null);
         return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
+    }
+
+    public boolean hasAnimation() {
+        return frameCount != -1;
+    }
+
+    public BufferedImage getAnimatedTexture(BufferedImage img, int frame) {
+        int aframe = frame%frameCount;
+        int h = img.getHeight();
+        int w = img.getWidth();
+        BufferedImage res = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        for (int y=0; y<h; y++) {
+            for (int x=0; x<w; x++) {
+                if (y>=aframe*w && y<(aframe+1)*w) {
+                    res.setRGB(x, y-(aframe*w), img.getRGB(x, y));
+                }
+            }
+        }
+        return res;
+    }
+
+    public BufferedImage getAnimatedTexture(BufferedImage img) {
+        return getAnimatedTexture(img, animationIndex);
+    }
+
+    public float getAnimatedV(float v) {
+        return v * (((float) (animationIndex%frameCount)+1)/frameCount);
     }
 }

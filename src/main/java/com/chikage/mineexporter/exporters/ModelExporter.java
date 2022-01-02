@@ -77,6 +77,10 @@ public class ModelExporter extends BlockExporter{
                     }
                     if (texture == null) continue;
 
+//                    if (texHandler.hasAnimation()) {
+//                        texture = texHandler.getAnimatedTexture(texture);
+//                    }
+
                     try {
                         if (!ctmName.equals("none")) texHandler.setConnectedImage(expCtx.rm, texture, expCtx.ctmHandler);
                     } catch (IOException | ArrayIndexOutOfBoundsException e) {
@@ -132,6 +136,10 @@ public class ModelExporter extends BlockExporter{
 
                     float u = (float) Math.round((quad.getSprite().getUnInterpolatedU((float) ((Float.intBitsToFloat(vData[index + 4]) - Float.intBitsToFloat(vData[(index+14)%21 + 4])*.001)/.999))/16.0)*textureWidth)/textureWidth;
                     float v = 1F-(float) Math.round((quad.getSprite().getUnInterpolatedV((float) ((Float.intBitsToFloat(vData[index + 5]) - Float.intBitsToFloat(vData[(index+14)%21 + 5])*.001)/.999))/16.0)*textureHeight)/textureHeight;
+
+                    if (texHandler.hasAnimation()) {
+                        v = texHandler.getAnimatedV(v);
+                    }
 
 //                                int nv = vData[index + 6];
 //                                float nx = (byte) ((nv) & 0xFF) / 127.0F;
