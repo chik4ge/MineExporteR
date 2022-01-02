@@ -125,46 +125,50 @@ public class Main {
         GL11.glColor4d(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha());
         GL11.glLineWidth(width);
 
-        double dx = Math.abs(posA.x - posB.x)+1;
-        double dy = Math.abs(posA.y - posB.y)+1;
-        double dz = Math.abs(posA.z - posB.z)+1;
+        double Mx = Math.max(posA.x, posB.x)+1;
+        double My = Math.max(posA.y, posB.y)+1;
+        double Mz = Math.max(posA.z, posB.z)+1;
+
+        double mx = Math.min(posA.x, posB.x);
+        double my = Math.min(posA.y, posB.y);
+        double mz = Math.min(posA.z, posB.z);
 
         //AB
-        bufferBuilder.pos(posA.x, posA.y, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();          //A
-        bufferBuilder.pos(posA.x, posA.y, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //B
+        bufferBuilder.pos(mx, my, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();          //A
+        bufferBuilder.pos(mx, my, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //B
         //BC
-        bufferBuilder.pos(posA.x, posA.y, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //B
-        bufferBuilder.pos(posA.x+dx, posA.y, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //C
+        bufferBuilder.pos(mx, my, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //B
+        bufferBuilder.pos(Mx, my, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //C
         //CD
-        bufferBuilder.pos(posA.x+dx, posA.y, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //C
-        bufferBuilder.pos(posA.x+dx, posA.y, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //D
+        bufferBuilder.pos(Mx, my, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //C
+        bufferBuilder.pos(Mx, my, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //D
         //DA
-        bufferBuilder.pos(posA.x+dx, posA.y, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //D
-        bufferBuilder.pos(posA.x, posA.y, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();          //A
+        bufferBuilder.pos(Mx, my, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //D
+        bufferBuilder.pos(mx, my, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();          //A
         //EF
-        bufferBuilder.pos(posA.x, posA.y+dy, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //E
-        bufferBuilder.pos(posA.x, posA.y+dy, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //F
+        bufferBuilder.pos(mx, My, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //E
+        bufferBuilder.pos(mx, My, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //F
         //FG
-        bufferBuilder.pos(posA.x, posA.y+dy, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //F
-        bufferBuilder.pos(posA.x+dx, posA.y+dy, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex(); //G
+        bufferBuilder.pos(mx, My, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //F
+        bufferBuilder.pos(Mx, My, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex(); //G
         //GH
-        bufferBuilder.pos(posA.x+dx, posA.y+dy, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex(); //G
-        bufferBuilder.pos(posA.x+dx, posA.y+dy, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //H
+        bufferBuilder.pos(Mx, My, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex(); //G
+        bufferBuilder.pos(Mx, My, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //H
         //HE
-        bufferBuilder.pos(posA.x+dx, posA.y+dy, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //H
-        bufferBuilder.pos(posA.x, posA.y+dy, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //E
+        bufferBuilder.pos(Mx, My, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //H
+        bufferBuilder.pos(mx, My, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //E
         //AE
-        bufferBuilder.pos(posA.x, posA.y, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();          //A
-        bufferBuilder.pos(posA.x, posA.y+dy, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //E
+        bufferBuilder.pos(mx, my, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();          //A
+        bufferBuilder.pos(mx, My, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //E
         //BF
-        bufferBuilder.pos(posA.x, posA.y, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //B
-        bufferBuilder.pos(posA.x, posA.y+dy, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //F
+        bufferBuilder.pos(mx, my, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //B
+        bufferBuilder.pos(mx, My, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //F
         //CG
-        bufferBuilder.pos(posA.x+dx, posA.y, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //C
-        bufferBuilder.pos(posA.x+dx, posA.y+dy, posA.z+dz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex(); //G
+        bufferBuilder.pos(Mx, my, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //C
+        bufferBuilder.pos(Mx, My, Mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex(); //G
         //DH
-        bufferBuilder.pos(posA.x+dx, posA.y, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //D
-        bufferBuilder.pos(posA.x+dx, posA.y+dy, posA.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //H
+        bufferBuilder.pos(Mx, my, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();       //D
+        bufferBuilder.pos(Mx, My, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //H
     }
 
     /**
