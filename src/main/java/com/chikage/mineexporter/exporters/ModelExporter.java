@@ -21,8 +21,10 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
@@ -34,6 +36,7 @@ public class ModelExporter extends BlockExporter{
     @Override
     public boolean export(ExportContext expCtx, IBlockState state, BlockPos pos) {
         IBakedModel model = expCtx.bms.getModelForState(state);
+        List<Face> modelFaces = new ArrayList<>();
         for (EnumFacing facing : ArrayUtils.addAll(EnumFacing.VALUES, new EnumFacing[]{null})) {
             if (facing != null && !state.shouldSideBeRendered(expCtx.worldIn, pos, facing)) continue;
 
@@ -130,12 +133,24 @@ public class ModelExporter extends BlockExporter{
 
                     Vec3d offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
 
-                    float x = (float) (Float.intBitsToFloat(vData[index]) + offset.x);
-                    float y = (float) (Float.intBitsToFloat(vData[index + 1]) + offset.y);
-                    float z = (float) (Float.intBitsToFloat(vData[index + 2]) + offset.z);
+                    double d1 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index])).toString());
+                    double d2 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+1])).toString());
+                    double d3 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+2])).toString());
+                    double d4 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+3])).toString());
+                    double d5 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+4])).toString());
+                    double d6 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+5])).toString());
+                    double d7 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[(index+14)%21 + 4])).toString());
+                    double d8 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[(index+14)%21 + 5])).toString());
 
-                    float u = (float) Math.round((quad.getSprite().getUnInterpolatedU((float) ((Float.intBitsToFloat(vData[index + 4]) - Float.intBitsToFloat(vData[(index+14)%21 + 4])*.001)/.999))/16.0)*textureWidth)/textureWidth;
-                    float v = 1F-(float) Math.round((quad.getSprite().getUnInterpolatedV((float) ((Float.intBitsToFloat(vData[index + 5]) - Float.intBitsToFloat(vData[(index+14)%21 + 5])*.001)/.999))/16.0)*textureHeight)/textureHeight;
+                    double d9  = quad.getSprite().getUnInterpolatedU((float) ((d5 - d7*.001)/.999))/16.0;
+                    double d10 = quad.getSprite().getUnInterpolatedV((float) ((d6 - d8*.001)/.999))/16.0;
+
+                    float x = ((float)Math.round((d1 + offset.x)*1000000))/1000000;
+                    float y = ((float)Math.round((d2 + offset.y)*1000000))/1000000;
+                    float z = ((float)Math.round((d3 + offset.z)*1000000))/1000000;
+
+                    float u = (float) Math.round(d9*textureWidth)/textureWidth;
+                    float v = 1F-(float) Math.round(d10*textureHeight)/textureHeight;
 
                     if (texHandler.hasAnimation()) {
                         v = texHandler.getAnimatedV(v);

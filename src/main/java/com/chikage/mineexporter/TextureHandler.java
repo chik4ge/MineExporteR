@@ -40,7 +40,6 @@ public class TextureHandler {
 
         if (sprite.hasAnimationMetadata()) {
             frameCount = sprite.getFrameCount();
-            height = width;
         }
 
         String iconName = sprite.getIconName();
@@ -198,6 +197,6 @@ public class TextureHandler {
     }
 
     public float getAnimatedV(float v) {
-        return v * (((float) (animationIndex%frameCount)+1)/frameCount);
+        return Math.round((v * ((animationIndex%frameCount)+1)/frameCount)*(frameCount*height))/((float)frameCount*height);
     }
 }
