@@ -1,11 +1,13 @@
 package com.chikage.mineexporter.utils;
 
+import net.minecraft.util.math.Vec3d;
+
 import java.util.Objects;
 
 public class Vertex {
-    public final float x;
-    public final float y;
-    public final float z;
+    public float x;
+    public float y;
+    public float z;
 
     public Vertex(float x, float y, float z) {
         this.x = x;
@@ -24,5 +26,15 @@ public class Vertex {
     @Override
     public int hashCode() {
         return Objects.hash(x, y, z);
+    }
+
+    public Vec3d toVec3d() {
+        return new Vec3d(x, y, z);
+    }
+
+    public void add(double dx, double dy, double dz) {
+        x += dx;
+        y += dy;
+        z += dz;
     }
 }

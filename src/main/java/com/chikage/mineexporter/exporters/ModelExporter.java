@@ -21,10 +21,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
@@ -165,12 +162,26 @@ public class ModelExporter extends BlockExporter{
 
                     vertices[i] = vertex;
                     uvs[i] = uv;
-
-                    expCtx.vertices.add(vertex);
-                    expCtx.uvs.add(uv);
                 }
 
                 Face face = new Face(vertices, uvs);
+                Vec3d n1 = face.getNormal();
+                for (Face f: modelFaces) {
+                    if (face.hasSameVertex(f)) {
+                        Vec3d n2 = f.getNormal();
+                        double dot = n1.dotProduct(n2);
+                        if (dot > 0) {
+                            face.moveTo(n1, 0.001);
+                        } else {
+                            face.moveTo(n1, 0.0005);
+                            f.moveTo(n2, 0.0005);
+                        }
+                    }
+                }
+                modelFaces.add(face);
+                Collections.addAll(expCtx.vertices, vertices);
+                Collections.addAll(expCtx.uvs, uvs);
+
                 if (expCtx.faces.containsKey(texName)) {
                     expCtx.faces.get(texName).add(face);
                 } else {

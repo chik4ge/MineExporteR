@@ -3,8 +3,8 @@ package com.chikage.mineexporter.utils;
 import java.util.Objects;
 
 public class UV {
-    public final float u;
-    public final float v;
+    public float u;
+    public float v;
 
     public UV(float u, float v) {
         this.u = u;
