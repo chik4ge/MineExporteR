@@ -22,6 +22,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
@@ -38,6 +39,8 @@ public class ModelExporter extends BlockExporter{
             if (facing != null && !state.shouldSideBeRendered(expCtx.worldIn, pos, facing)) continue;
 
             for (BakedQuad quad : model.getQuads(state, facing, 0)) {
+                Face face = new Face(new Vertex[4], new UV[4]);
+
                 CTMContext ctx = new CTMContext(expCtx.worldIn, quad, pos);
                 TextureHandler texHandler = new TextureHandler(quad.getSprite(), expCtx.ctmHandler, ctx);
 
@@ -122,8 +125,6 @@ public class ModelExporter extends BlockExporter{
                 //            4...U座標(Float)
                 //            5...V座標(Float)
                 //            6...法線ベクトル(Byte*3) + あまり8bit
-                Vertex[] vertices = new Vertex[4];
-                UV[] uvs = new UV[4];
 
                 for (int i = 0; i < 4; i++) {
                     int index = i * 7;
@@ -133,7 +134,7 @@ public class ModelExporter extends BlockExporter{
                     double d1 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index])).toString());
                     double d2 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+1])).toString());
                     double d3 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+2])).toString());
-                    double d4 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+3])).toString());
+//                    double d4 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+3])).toString());
                     double d5 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+4])).toString());
                     double d6 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+5])).toString());
                     double d7 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[(index+14)%21 + 4])).toString());
@@ -160,11 +161,11 @@ public class ModelExporter extends BlockExporter{
                     Vertex vertex = new Vertex(x,y,z);
                     UV uv = new UV(u, v);
 
-                    vertices[i] = vertex;
-                    uvs[i] = uv;
+                    face.vertex[i] = vertex;
+                    face.uv[i] = uv;
                 }
 
-                Face face = new Face(vertices, uvs);
+//                過去に追加したFaceと座標が重複した場合法線方向に少しずらす
                 Vec3d n1 = face.getNormal();
                 for (Face f: modelFaces) {
                     if (face.hasSameVertex(f)) {
@@ -179,16 +180,17 @@ public class ModelExporter extends BlockExporter{
                     }
                 }
                 modelFaces.add(face);
-                Collections.addAll(expCtx.vertices, vertices);
-                Collections.addAll(expCtx.uvs, uvs);
+                Collections.addAll(expCtx.vertices, face.vertex);
+                Collections.addAll(expCtx.uvs, face.uv);
 
                 if (expCtx.faces.containsKey(texName)) {
                     expCtx.faces.get(texName).add(face);
                 } else {
-                    expCtx.faces.put(texName, new HashSet<>(Arrays.asList(face)));
+                    expCtx.faces.put(texName, new CopyOnWriteArraySet<>(Collections.singletonList(face)));
                 }
             }
         }
+
         return true;
     }
 }
