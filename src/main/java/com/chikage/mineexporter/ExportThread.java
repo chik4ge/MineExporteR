@@ -7,7 +7,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraft.world.WorldServer;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 
@@ -63,7 +63,7 @@ public class ExportThread extends Thread {
                 mtls
                 );
 
-        IChunkProvider provider = ((WorldServer)expCtx.worldIn).getChunkProvider();
+        IChunkProvider provider = ((World)expCtx.worldIn).getChunkProvider();
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
         try {
@@ -86,33 +86,50 @@ public class ExportThread extends Thread {
         }
 
         HashMap<Vertex, Integer> vertexIdMap = new HashMap<>();
-        int id = 0;
-        for (Vertex vertex : vertices) {
-            if (!vertexIdMap.containsKey(vertex)) {
-                obj.addVertex(vertex.x, vertex.y, vertex.z);
-                vertexIdMap.put(vertex, id);
-                id++;
-            }
-        }
+//        int id = 0;
+//        Main.logger.debug("vertex");
+//        for (Vertex vertex : vertices) {
+//            obj.addVertex(vertex.x, vertex.y, vertex.z);
+//            Main.logger.debug(id + ": " + vertex.x + " " + vertex.y + " " + vertex.z);
+//            vertexIdMap.put(vertex, id);
+//            id++;
+//        }
 
         HashMap<UV, Integer> uvIdMap = new HashMap<>();
-        id = 0;
-        for (UV uv : uvs) {
-            if (!uvIdMap.containsKey(uv)) {
-                obj.addTexCoord(uv.u, uv.v);
-                uvIdMap.put(uv, id);
-                id++;
-            }
-        }
+//        id = 0;
+//        Main.logger.debug("uv");
+//        for (UV uv : uvs) {
+//            obj.addTexCoord(uv.u, uv.v);
+//            Main.logger.debug(id + ": " + uv.u + " " + uv.v);
+//            uvIdMap.put(uv, id);
+//            id++;
+//        }
 
+//        Main.logger.debug("face");
+        int vertexId = 0;
+        int uvId = 0;
         for (Map.Entry<String, Set<Face>> facesOfMtl : faces.entrySet()) {
             obj.setActiveMaterialGroupName(facesOfMtl.getKey());
             for (Face face : facesOfMtl.getValue()) {
                 int[] vertexIndices = new int[4];
                 int[] uvIndices = new int[4];
                 for (int i=0; i<4; i++) {
-                    vertexIndices[i] = vertexIdMap.get(face.vertex[i]);
-                    uvIndices[i] = uvIdMap.get(face.uv[i]);
+//                    Main.logger.debug(face.vertex[i].x + " " + face.vertex[i].y + " " + face.vertex[i].z);
+                    Vertex vertex = face.vertex[i];
+                    if (!vertexIdMap.containsKey(vertex)) {
+                        obj.addVertex(vertex.x, vertex.y, vertex.z);
+                        vertexIdMap.put(vertex, vertexId);
+                        vertexId++;
+                    }
+                    vertexIndices[i] = vertexIdMap.get(vertex);
+
+                    UV uv = face.uv[i];
+                    if (!uvIdMap.containsKey(uv)) {
+                        obj.addTexCoord(uv.u, uv.v);
+                        uvIdMap.put(uv, uvId);
+                        uvId++;
+                    }
+                    uvIndices[i] = uvIdMap.get(uv);
                 }
                 obj.addFace(vertexIndices, uvIndices, null);
             }
