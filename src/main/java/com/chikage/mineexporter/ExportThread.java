@@ -1,6 +1,5 @@
 package com.chikage.mineexporter;
 
-import com.chikage.mineexporter.ctm.CTMHandler;
 import com.chikage.mineexporter.utils.*;
 import de.javagl.obj.*;
 import net.minecraft.command.ICommandSender;
@@ -19,25 +18,21 @@ import java.util.concurrent.*;
 import static net.minecraft.client.Minecraft.getMinecraft;
 
 public class ExportThread extends Thread {
-    private final MinecraftServer server;
     private final ICommandSender sender;
     private final BlockPos pos1;
     private final BlockPos pos2;
-    private final int dimensionId;
 
-    private final boolean isCTMSupport = true;
+//    private final boolean isCTMSupport = true;
 
     public ExportThread(MinecraftServer server, ICommandSender sender, BlockPos pos1, BlockPos pos2) {
         this.sender = sender;
-        this.server = server;
         this.pos1 = pos1;
         this.pos2 = pos2;
-        this.dimensionId = sender.getEntityWorld().provider.getDimension();
     }
 
     public void run() {
 //        long startTime = System.currentTimeMillis();
-        long countStart = System.currentTimeMillis();
+//        long countStart = System.currentTimeMillis();
         boolean noError = true;
         Main.logger.info("exporting from (" + pos1.getX() + ", " + pos1.getY() + ", " + pos1.getZ() + ") to (" + pos2.getX() + ", " + pos2.getY() + ", " + pos2.getZ() + ")");
 
@@ -58,7 +53,7 @@ public class ExportThread extends Thread {
                 getMinecraft().getResourcePackRepository(),
                 getMinecraft().getBlockRendererDispatcher().getBlockModelShapes(),
 
-                server.getWorld(dimensionId),
+                sender.getEntityWorld(),
 
                 range,
 
@@ -157,6 +152,7 @@ public class ExportThread extends Thread {
         if (f.isFile()) f.delete();
         else if (f.isDirectory()) {
             File[] files = f.listFiles();
+            assert files != null;
             for (File cFile: files) {
                 deleteFile(cFile);
             }
