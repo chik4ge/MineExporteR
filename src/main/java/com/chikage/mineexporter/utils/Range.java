@@ -1,6 +1,7 @@
 package com.chikage.mineexporter.utils;
 
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.chunk.Chunk;
 
 import java.util.*;
@@ -32,7 +33,7 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
     }
 
     public Set<int[]> getChunks() {
-        Set<int[]> res = new HashSet();
+        HashSet<int[]> res = new HashSet<>();
         for (int i=(minX>>4); i<=(maxX>>4); i++) {
             for (int j=(minZ>>4); j<=(maxZ>>4); j++) {
                 res.add(new int[]{i,j});
@@ -102,6 +103,10 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
 
     public BlockPos getOrigin() {
         return new BlockPos(minX, minY, minZ);
+    }
+
+    public Vec3i calcDimension() {
+        return new Vec3i(maxX-minX, maxY-minY, maxZ-minZ);
     }
 
     public long getSize() {
