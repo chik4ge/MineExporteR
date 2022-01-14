@@ -2,14 +2,15 @@ package com.chikage.mineexporter;
 
 import com.chikage.mineexporter.commands.CommandMexp;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.ClientCommandHandler;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -76,11 +77,22 @@ public class Main {
     }
 
     @SubscribeEvent
-    public void onRender(RenderWorldLastEvent event) {
+    public void onOverlayRender(RenderGameOverlayEvent.Pre event) {
+        FontRenderer renderer = Minecraft.getMinecraft().fontRenderer;
+        int x = 0;
+        int y = 0;
+        String text = "test";
+        renderer.drawStringWithShadow(text, (float)(x - renderer.getStringWidth(text) / 2), (float)y, 0xE0E0E0);
+    }
+
+    @SubscribeEvent
+    public void onWorldRender(RenderWorldLastEvent event) {
 //        Main.logger.info("draw");
         BlockPos pos1 = mexpCommand.getPos1();
         BlockPos pos2 = mexpCommand.getPos2();
         Entity entity = Minecraft.getMinecraft().getRenderViewEntity();
+        if (entity == null) return;
+
         Vec3d cameraPos = new Vec3d(
                 entity.lastTickPosX + (entity.posX - entity.lastTickPosX)* event.getPartialTicks(),
                 entity.lastTickPosY + (entity.posY - entity.lastTickPosY)* event.getPartialTicks(),
