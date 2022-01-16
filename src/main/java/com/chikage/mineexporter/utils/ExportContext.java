@@ -28,6 +28,8 @@ public class ExportContext {
     public final Map<String, Set<Face>> faces;
     public final Set<Mtl> mtls;
 
+    private long processedBlocks = 0;
+
     public ExportContext(
             IResourceManager rm,
             ResourcePackRepository rpr,
@@ -59,5 +61,13 @@ public class ExportContext {
         this.uvs = uvs;
         this.faces = faces;
         this.mtls = mtls;
+    }
+
+    public synchronized void incProcessedBlocks() {
+        processedBlocks++;
+    }
+
+    public synchronized long getProcessedBlocks() {
+        return processedBlocks;
     }
 }
