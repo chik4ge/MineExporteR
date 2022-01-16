@@ -3,7 +3,6 @@ package com.chikage.mineexporter;
 import com.chikage.mineexporter.utils.*;
 import de.javagl.obj.*;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
@@ -17,23 +16,51 @@ import java.util.concurrent.*;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
 
-public class ExportThread extends Thread {
-    private final ICommandSender sender;
-    private final BlockPos pos1;
-    private final BlockPos pos2;
+public class ExportThread implements Runnable {
+    private BlockPos pos1;
+    private BlockPos pos2;
+    private World world;
+    private ICommandSender commandSender;
+    private boolean isRunning = false;
 
 //    private final boolean isCTMSupport = true;
 
-    public ExportThread(MinecraftServer server, ICommandSender sender, BlockPos pos1, BlockPos pos2) {
-        this.sender = sender;
+    public void setCommandSender(ICommandSender sender) {
+        this.commandSender = sender;
+    }
+
+    public void setWorld(World world) {
+        this.world = world;
+    }
+
+    public void setPos1(BlockPos pos1) {
         this.pos1 = pos1;
+    }
+
+    public BlockPos getPos1() {
+        return pos1;
+    }
+
+    public BlockPos getPos2() {
+        return pos2;
+    }
+
+    public void setPos2(BlockPos pos2) {
         this.pos2 = pos2;
     }
 
-    public void run() {
-//        long startTime = System.currentTimeMillis();
-//        long countStart = System.currentTimeMillis();
-        boolean noError = true;
+    public void run(){
+        if (!isPosSet()) {
+            sendErrorMessage("set pos1 and pos2 first.");
+            return;
+        }
+        if (isRunning) {
+            sendErrorMessage("export process is already running!");
+            return;
+        }
+
+        isRunning = true;
+
         Main.logger.info("exporting from (" + pos1.getX() + ", " + pos1.getY() + ", " + pos1.getZ() + ") to (" + pos2.getX() + ", " + pos2.getY() + ", " + pos2.getZ() + ")");
 
 //        delete texture file
@@ -53,7 +80,7 @@ public class ExportThread extends Thread {
                 getMinecraft().getResourcePackRepository(),
                 getMinecraft().getBlockRendererDispatcher().getBlockModelShapes(),
 
-                sender.getEntityWorld(),
+                world,
 
                 range,
 
@@ -86,26 +113,8 @@ public class ExportThread extends Thread {
         }
 
         HashMap<Vertex, Integer> vertexIdMap = new HashMap<>();
-//        int id = 0;
-//        Main.logger.debug("vertex");
-//        for (Vertex vertex : vertices) {
-//            obj.addVertex(vertex.x, vertex.y, vertex.z);
-//            Main.logger.debug(id + ": " + vertex.x + " " + vertex.y + " " + vertex.z);
-//            vertexIdMap.put(vertex, id);
-//            id++;
-//        }
 
         HashMap<UV, Integer> uvIdMap = new HashMap<>();
-//        id = 0;
-//        Main.logger.debug("uv");
-//        for (UV uv : uvs) {
-//            obj.addTexCoord(uv.u, uv.v);
-//            Main.logger.debug(id + ": " + uv.u + " " + uv.v);
-//            uvIdMap.put(uv, id);
-//            id++;
-//        }
-
-//        Main.logger.debug("face");
         int vertexId = 0;
         int uvId = 0;
         for (Map.Entry<String, Set<Face>> facesOfMtl : faces.entrySet()) {
@@ -114,7 +123,6 @@ public class ExportThread extends Thread {
                 int[] vertexIndices = new int[4];
                 int[] uvIndices = new int[4];
                 for (int i=0; i<4; i++) {
-//                    Main.logger.debug(face.vertex[i].x + " " + face.vertex[i].y + " " + face.vertex[i].z);
                     Vertex vertex = face.vertex[i];
                     if (!vertexIdMap.containsKey(vertex)) {
                         obj.addVertex(vertex.x, vertex.y, vertex.z);
@@ -138,6 +146,7 @@ public class ExportThread extends Thread {
         File objFile = new File("MineExporteR/export.obj");
         File mtlFile = new File("MineExporteR/export.mtl");
         obj.setMtlFileNames(Collections.singletonList("export.mtl"));
+
         try {
             OutputStream objOutput = new BufferedOutputStream(new FileOutputStream(objFile));
             OutputStream mtlOutput = new BufferedOutputStream(new FileOutputStream(mtlFile));
@@ -145,23 +154,35 @@ public class ExportThread extends Thread {
             MtlWriter.write(mtls, mtlOutput);
             mtlOutput.close();
             objOutput.close();
-        } catch (FileNotFoundException e) {
-            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to find output file."));
-            e.printStackTrace();
-            return;
         } catch (IOException e) {
-            sender.sendMessage(new TextComponentString(TextFormatting.RED + "failed to write output file."));
-            e.printStackTrace();
+            sendErrorMessage("failed to write output file.");
             return;
+        } finally {
+            isRunning = false;
         }
-        if (noError) {
-            sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "successfully exported."));
-        } else {
-            sender.sendMessage(new TextComponentString(TextFormatting.YELLOW + "exported with some error. see the latest.log."));
-        }
+        sendSuccessMessage("successfully exported.");
+//        if (noError) {
+//            sender.sendMessage(new TextComponentString(TextFormatting.GREEN + "successfully exported."));
+//        } else {
+//            sender.sendMessage(new TextComponentString(TextFormatting.YELLOW + "exported with some error. see the latest.log."));
+//        }
 
 //        long endTime = System.currentTimeMillis();
 //        sender.sendMessage(new TextComponentString("elapsed " + (endTime-startTime)/1000.0 + "s"));
+    }
+
+    private void sendMessage(TextFormatting tf, String s) {
+        if (this.commandSender != null) {
+            commandSender.sendMessage(new TextComponentString(tf + s));
+        }
+    }
+
+    private void sendErrorMessage(String s) {
+        sendMessage(TextFormatting.RED, s);
+    }
+
+    private void sendSuccessMessage(String s) {
+        sendMessage(TextFormatting.GREEN, s);
     }
 
     private void deleteFile(File f) {
@@ -175,5 +196,9 @@ public class ExportThread extends Thread {
             }
             f.delete();
         }
+    }
+
+    public boolean isPosSet() {
+        return this.pos1 != null && this.pos2 != null;
     }
 }

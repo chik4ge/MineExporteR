@@ -41,6 +41,8 @@ public class Main {
 
     public final CommandMexp mexpCommand = new CommandMexp();
 
+    public static final ExportThread exportThread = new ExportThread();
+
     public static Logger logger;
 
     /**
@@ -83,7 +85,7 @@ public class Main {
         int height = event.getResolution().getScaledHeight();
 
         int x = width/2;
-        int y = height - 40;
+        int y = height - 60;
         int n = 0;
         String text = "EXPORTING..."+n+"%";
         renderer.drawStringWithShadow(text, (float)(x - renderer.getStringWidth(text) / 2), (float)y, 0xE0E0E0);
@@ -92,8 +94,8 @@ public class Main {
     @SubscribeEvent
     public void onWorldRender(RenderWorldLastEvent event) {
 //        Main.logger.info("draw");
-        BlockPos pos1 = mexpCommand.getPos1();
-        BlockPos pos2 = mexpCommand.getPos2();
+        BlockPos pos1 = exportThread.getPos1();
+        BlockPos pos2 = exportThread.getPos2();
         RenderHandler.renderSelectedRegion(pos1, pos2, event.getPartialTicks());
     }
 
