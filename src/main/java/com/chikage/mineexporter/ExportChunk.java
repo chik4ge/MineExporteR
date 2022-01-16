@@ -31,6 +31,7 @@ public class ExportChunk implements Runnable{
         Range range = chunkRange.intersect(expCtx.range);
 
         for (BlockPos pos : range) {
+            expCtx.incProcessedBlocks();
             IBlockState state = chunk.getBlockState(pos).getActualState(chunk.getWorld(), pos);
             if (state.toString().equals("minecraft:air")) continue;
 

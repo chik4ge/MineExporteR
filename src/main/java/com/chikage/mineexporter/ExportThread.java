@@ -23,6 +23,8 @@ public class ExportThread implements Runnable {
     private ICommandSender commandSender;
     private boolean isRunning = false;
 
+    private ExportContext expCtx;
+
 //    private final boolean isCTMSupport = true;
 
     public void setCommandSender(ICommandSender sender) {
@@ -75,7 +77,7 @@ public class ExportThread implements Runnable {
 
         Range range = new Range(pos1, pos2);
 
-        ExportContext expCtx = new ExportContext(
+        expCtx = new ExportContext(
                 getMinecraft().getResourceManager(),
                 getMinecraft().getResourcePackRepository(),
                 getMinecraft().getBlockRendererDispatcher().getBlockModelShapes(),
@@ -196,6 +198,14 @@ public class ExportThread implements Runnable {
             }
             f.delete();
         }
+    }
+
+    public int getProgressPercent() {
+        if (!isRunning || expCtx == null) return -1;
+
+        long size = expCtx.range.getSize();
+        long processed = expCtx.getProcessedBlocks();
+        return (int)(100*processed/size);
     }
 
     public boolean isPosSet() {

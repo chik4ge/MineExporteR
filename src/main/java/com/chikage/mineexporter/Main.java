@@ -86,9 +86,11 @@ public class Main {
 
         int x = width/2;
         int y = height - 60;
-        int n = 0;
-        String text = "EXPORTING..."+n+"%";
-        renderer.drawStringWithShadow(text, (float)(x - renderer.getStringWidth(text) / 2), (float)y, 0xE0E0E0);
+        int n = exportThread.getProgressPercent();
+        if (n != -1) {
+            String text = "EXPORTING..." + n + "%";
+            renderer.drawStringWithShadow(text, (float) (x - renderer.getStringWidth(text) / 2), (float) y, 0xE0E0E0);
+        }
     }
 
     @SubscribeEvent
