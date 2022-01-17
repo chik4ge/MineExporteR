@@ -1,5 +1,6 @@
 package com.chikage.mineexporter;
 
+import com.chikage.mineexporter.utils.Range;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
@@ -10,10 +11,11 @@ import net.minecraft.util.math.Vec3d;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
+import java.util.Set;
 
 public class RenderHandler {
 
-    public static void renderSelectedRegion(BlockPos pos1, BlockPos pos2, float partialTicks){
+    public static void renderSelectedRegion(BlockPos pos1, BlockPos pos2, Set<int[]> chunks, float partialTicks){
         Entity entity = Minecraft.getMinecraft().getRenderViewEntity();
         if (entity == null) return;
 
@@ -37,19 +39,40 @@ public class RenderHandler {
         BufferBuilder bufferBuilder = tessellator.getBuffer();
         bufferBuilder.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
 
+        if (pos1 != null && pos2 != null) {
+            double Mx = Math.max(pos1.getX(), pos2.getX())+1;
+            double My = Math.max(pos1.getY(), pos2.getY())+1;
+            double Mz = Math.max(pos1.getZ(), pos2.getZ())+1;
+
+            double mx = Math.min(pos1.getX(), pos2.getX());
+            double my = Math.min(pos1.getY(), pos2.getY());
+            double mz = Math.min(pos1.getZ(), pos2.getZ());
+
+            if (chunks != null) {
+                for (int[] chunkXZ : chunks) {
+                    Color c = new Color(255, 255, 0,128);
+                    drawChunkRange(bufferBuilder, mx, my, mz, Mx, My, Mz, chunkXZ, c, .1f);
+                }
+            } else {
+                chunks = new Range(pos1, pos2).getChunks();
+                for (int[] chunkXZ : chunks) {
+                    Color c = new Color(255, 255, 0,128);
+                    drawChunkRange(bufferBuilder, mx, my, mz, Mx, My, Mz, chunkXZ, c, .1f);
+                }
+            }
+
+            Color c = new Color(255, 255, 255, 255);
+            drawBoundingBox(bufferBuilder, mx, my, mz, Mx, My, Mz, c, 3);
+        }
+
         if (pos1 != null) {
             Color c = new Color(255, 0, 0, 255);
-            drawBoundingBox(bufferBuilder, new Vec3d(pos1), new Vec3d(pos1), c, 2);
+            drawBoundingBox(bufferBuilder, pos1.getX(), pos1.getY(), pos1.getZ(), c, 2);
         }
 
         if (pos2 != null) {
             Color c = new Color(0, 0, 255, 255);
-            drawBoundingBox(bufferBuilder, new Vec3d(pos2), new Vec3d(pos2), c, 2);
-        }
-
-        if (pos1 != null && pos2 != null) {
-            Color c = new Color(255, 255, 255, 255);
-            drawBoundingBox(bufferBuilder, new Vec3d(pos1), new Vec3d(pos2), c, 3);
+            drawBoundingBox(bufferBuilder, pos2.getX(), pos2.getY(), pos2.getZ(), c, 2);
         }
 
         tessellator.draw();
@@ -57,17 +80,9 @@ public class RenderHandler {
         GL11.glPopAttrib();
     }
 
-    private static void drawBoundingBox(BufferBuilder bufferBuilder, Vec3d posA, Vec3d posB, Color c, float width) {
+    private static void drawBoundingBox(BufferBuilder bufferBuilder, double mx, double my, double mz, double Mx, double My, double Mz, Color c, float width) {
         GL11.glColor4d(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha());
         GL11.glLineWidth(width);
-
-        double Mx = Math.max(posA.x, posB.x)+1;
-        double My = Math.max(posA.y, posB.y)+1;
-        double Mz = Math.max(posA.z, posB.z)+1;
-
-        double mx = Math.min(posA.x, posB.x);
-        double my = Math.min(posA.y, posB.y);
-        double mz = Math.min(posA.z, posB.z);
 
         //AB
         bufferBuilder.pos(mx, my, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();          //A
@@ -107,7 +122,33 @@ public class RenderHandler {
         bufferBuilder.pos(Mx, My, mz).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();    //H
     }
 
-    public static void renderProgressText() {
+    private static void drawBoundingBox(BufferBuilder bufferBuilder, double x, double y, double z, Color c, float width) {
+        drawBoundingBox(bufferBuilder, x, y, z, x+1, y+1, z+1, c, width);
+    }
 
+    private static void drawRect(BufferBuilder bufferBuilder, double x1, double y1, double z1, double x2, double y2, double z2, Color c, float width) {
+        GL11.glColor4d(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha());
+        GL11.glLineWidth(width);
+
+        bufferBuilder.pos(x1, y1, z1).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
+        bufferBuilder.pos(x2, y1, z2).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
+
+        bufferBuilder.pos(x1, y1, z1).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
+        bufferBuilder.pos(x1, y2, z1).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
+
+        bufferBuilder.pos(x2, y1, z2).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
+        bufferBuilder.pos(x2, y2, z2).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
+
+        bufferBuilder.pos(x1, y2, z1).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
+        bufferBuilder.pos(x2, y2, z2).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
+    }
+
+    private static void drawChunkRange(BufferBuilder bufferBuilder, double mx, double my, double mz, double Mx, double My, double Mz, int[] chunkXZ, Color c, float width) {
+        double maxX = Math.min(Mx, 16*chunkXZ[0]+16);
+        double maxZ = Math.min(Mz, 16*chunkXZ[1]+16);
+        double minX = Math.max(mx, 16*chunkXZ[0]);
+        double minZ = Math.max(mz, 16*chunkXZ[1]);
+
+        drawBoundingBox(bufferBuilder, minX, my, minZ, maxX, My, maxZ, c, width);
     }
 }
