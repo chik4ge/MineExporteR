@@ -63,8 +63,8 @@ public class ExportContext {
         this.mtls = mtls;
     }
 
-    public synchronized void incProcessedBlocks() {
-        processedBlocks++;
+    public synchronized void incProcessedBlocks(long amount) {
+        processedBlocks += amount;
     }
 
     public synchronized long getProcessedBlocks() {

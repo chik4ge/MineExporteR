@@ -94,17 +94,20 @@ public class ExportThread implements Runnable {
 
         IChunkProvider provider = ((World)expCtx.worldIn).getChunkProvider();
 
+        Main.logger.info("start chunk loading");
+
         ExecutorService executor = Executors.newFixedThreadPool(4);
         try {
             Set<int[]> chunks = range.getChunks();
-            Set<int[]> processed = new HashSet<>();
 
-            while (!chunks.equals(processed)) {
-                for (int[] chunkXZ : chunks) {
+            while (!chunks.isEmpty()) {
+                Iterator<int[]> it = chunks.iterator();
+                while (it.hasNext()) {
+                    int[] chunkXZ = it.next();
                     Chunk chunk = provider.getLoadedChunk(chunkXZ[0], chunkXZ[1]);
-                    if (chunk != null && chunk.isLoaded()) {
+                    if (chunk != null) {
                         executor.execute(new ExportChunk(expCtx, chunk));
-                        processed.add(chunkXZ);
+                        it.remove();
                     }
                 }
             }
@@ -113,6 +116,8 @@ public class ExportThread implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        Main.logger.info("finished chunk loading");
 
         HashMap<Vertex, Integer> vertexIdMap = new HashMap<>();
 
