@@ -18,6 +18,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 
@@ -78,6 +79,7 @@ public class Main {
         }
     }
 
+    private int exportProgressPercent = -1;
     @SubscribeEvent
     public void onOverlayRender(RenderGameOverlayEvent.Pre event) {
         FontRenderer renderer = Minecraft.getMinecraft().fontRenderer;
@@ -86,11 +88,15 @@ public class Main {
 
         int x = width/2;
         int y = height - 60;
-        int n = exportThread.getProgressPercent();
-        if (n != -1) {
-            String text = "EXPORTING..." + n + "%";
+        if (exportProgressPercent != -1) {
+            String text = "EXPORTING..." + exportProgressPercent + "%";
             renderer.drawStringWithShadow(text, (float) (x - renderer.getStringWidth(text) / 2), (float) y, 0xE0E0E0);
         }
+    }
+
+    @SubscribeEvent
+    public void onPlayerTicks(TickEvent.PlayerTickEvent event) {
+        exportProgressPercent = exportThread.getProgressPercent();
     }
 
     @SubscribeEvent
