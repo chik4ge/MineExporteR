@@ -21,7 +21,8 @@ public class ExportThread implements Runnable {
     private BlockPos pos2;
     private World world;
     private ICommandSender commandSender;
-    private Set<int[]> chunks;
+    private Set<int[]> exportingChunks;
+    private Set<int[]> unExportedChunks;
     private boolean isRunning = false;
 
     private ExportContext expCtx;
@@ -67,7 +68,7 @@ public class ExportThread implements Runnable {
             Range range = new Range(pos1, pos2);
 
             isRunning = true;
-            setUnExportedChunks(range.getChunks());
+            initChunksData(range.getChunks());
 
 //            delete texture file
             deleteFile(new File("MineExporteR/textures"));
@@ -99,17 +100,25 @@ public class ExportThread implements Runnable {
             Main.logger.info("start chunk loading");
 
             ExecutorService executor = Executors.newFixedThreadPool(8);
-            Set<int[]> c = getUnExportedChunks();
+            Set<int[]> c = unExportedChunks;
             while (!c.isEmpty()) {
-                Iterator<int[]> it = c.iterator();
-                while (it.hasNext()) {
-                    int[] chunkXZ = it.next();
+                Set<int[]> exportedChunks = new CopyOnWriteArraySet<>();
+                for (int[] chunkXZ : c) {
                     Chunk chunk = provider.getLoadedChunk(chunkXZ[0], chunkXZ[1]);
                     if (chunk != null) {
-                        executor.execute(new ExportChunk(expCtx, chunk));
-                        it.remove();
+                        exportedChunks.add(chunkXZ);
+                        executor.execute(new ExportChunk(expCtx, chunk) {
+                            @Override
+                            public void run() {
+                                int[] chunkXZ = new int[]{chunk.x, chunk.z};
+                                exportingChunks.add(chunkXZ);
+                                super.run();
+                                exportingChunks.remove(chunkXZ);
+                            }
+                        });
                     }
                 }
+                c.removeAll(exportedChunks);
             }
             executor.shutdown();
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
@@ -163,17 +172,22 @@ public class ExportThread implements Runnable {
             return;
         } finally {
             isRunning = false;
-            setUnExportedChunks(null);
+            unExportedChunks = null;
         }
         sendSuccessMessage("successfully exported.");
     }
 
-    public synchronized Set<int[]> getUnExportedChunks() {
-        return chunks;
+    private void initChunksData(Set<int[]> initVal) {
+        unExportedChunks = initVal;
+        exportingChunks = new CopyOnWriteArraySet<>();
     }
 
-    private synchronized void setUnExportedChunks(Set<int[]> s) {
-        chunks = s;
+    public Set<int[]> getUnExportedChunks() {
+        return unExportedChunks;
+    }
+
+    public Set<int[]> getExportingChunks() {
+        return exportingChunks;
     }
 
     private void sendMessage(TextFormatting tf, String s) {

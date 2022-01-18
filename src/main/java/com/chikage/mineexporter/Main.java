@@ -99,15 +99,17 @@ public class Main {
     public void onPlayerTicks(TickEvent.PlayerTickEvent event) {
         exportProgressPercent = exportThread.getProgressPercent();
         unExportedChunks = exportThread.getUnExportedChunks();
+        exportingChunks = exportThread.getExportingChunks();
     }
 
     private Set<int[]> unExportedChunks;
+    private Set<int[]> exportingChunks;
     @SubscribeEvent
     public void onWorldRender(RenderWorldLastEvent event) {
 //        Main.logger.info("draw");
         BlockPos pos1 = exportThread.getPos1();
         BlockPos pos2 = exportThread.getPos2();
-        RenderHandler.renderSelectedRegion(pos1, pos2, unExportedChunks, event.getPartialTicks());
+        RenderHandler.renderSelectedRegion(pos1, pos2, unExportedChunks, exportingChunks, event.getPartialTicks());
     }
 
     /**

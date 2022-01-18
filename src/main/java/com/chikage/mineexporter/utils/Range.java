@@ -1,5 +1,6 @@
 package com.chikage.mineexporter.utils;
 
+import io.netty.util.internal.ConcurrentSet;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.Chunk;
 
@@ -32,7 +33,7 @@ public class Range implements Iterator<BlockPos>, Iterable<BlockPos> {
     }
 
     public Set<int[]> getChunks() {
-        Set<int[]> res = new HashSet<>();
+        Set<int[]> res = new ConcurrentSet<>();
         for (int i=(minX>>4); i<=(maxX>>4); i++) {
             for (int j=(minZ>>4); j<=(maxZ>>4); j++) {
                 res.add(new int[]{i,j});
