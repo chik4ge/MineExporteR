@@ -38,8 +38,8 @@ public class CTMHandler {
 
 //    Map<String, CTMMethod> locationCache = new HashMap<>();
 //    ArrayList<CTMMethod> methods = new ArrayList<>();
-    Map<ResourceLocation, HashSet<CTMMethod>> tileMatches = new ConcurrentHashMap<>();
-    Map<Block, HashSet<CTMMethod>> blockMatches = new ConcurrentHashMap<>();
+    Map<ResourceLocation, Set<CTMMethod>> tileMatches = new ConcurrentHashMap<>();
+    Map<Block, Set<CTMMethod>> blockMatches = new ConcurrentHashMap<>();
 
     String ctmDir = "assets/minecraft/mcpatcher/ctm/";
 
@@ -122,7 +122,7 @@ public class CTMHandler {
         }
     }
 
-    private <K, V> void putIfAbsent(Map<K, HashSet<V>> ma, K key, V me) {
+    private <K, V> void putIfAbsent(Map<K, Set<V>> ma, K key, V me) {
         if (ma.containsKey(key)) {
             ma.get(key).add(me);
         } else {
