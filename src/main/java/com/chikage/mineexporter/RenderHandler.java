@@ -50,20 +50,20 @@ public class RenderHandler {
 
             if (unExportedChunks != null) {
                 for (int[] chunkXZ : unExportedChunks) {
-                    Color c = new Color(255, 255, 0,128);
+                    Color c = new Color(0, 255, 255,128);
                     drawChunkRange(bufferBuilder, mx, my, mz, Mx, My, Mz, chunkXZ, c, .1f);
                 }
             } else {
                 unExportedChunks = new Range(pos1, pos2).getChunks();
                 for (int[] chunkXZ : unExportedChunks) {
-                    Color c = new Color(255, 255, 0,128);
+                    Color c = new Color(0, 255, 255,128);
                     drawChunkRange(bufferBuilder, mx, my, mz, Mx, My, Mz, chunkXZ, c, .1f);
                 }
             }
 
             if (exportingChunks != null) {
                 for (int[] chunkXZ : exportingChunks) {
-                    Color c = new Color(0, 255, 255,128);
+                    Color c = new Color(255, 255, 0,128);
                     drawChunkRange(bufferBuilder, mx, my, mz, Mx, My, Mz, chunkXZ, c, .1f);
                 }
             }

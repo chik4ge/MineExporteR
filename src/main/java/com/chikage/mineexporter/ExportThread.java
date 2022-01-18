@@ -99,7 +99,7 @@ public class ExportThread implements Runnable {
 
             Main.logger.info("start chunk loading");
 
-            ExecutorService executor = Executors.newFixedThreadPool(8);
+            ExecutorService executor = Executors.newFixedThreadPool(2);
             Set<int[]> c = unExportedChunks;
             while (!c.isEmpty()) {
                 Set<int[]> exportedChunks = new CopyOnWriteArraySet<>();
