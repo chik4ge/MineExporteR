@@ -15,7 +15,7 @@ import java.util.Set;
 
 public class RenderHandler {
 
-    public static void renderSelectedRegion(BlockPos pos1, BlockPos pos2, Set<int[]> chunks, float partialTicks){
+    public static void renderSelectedRegion(BlockPos pos1, BlockPos pos2, Set<int[]> unExportedChunks, Set<int[]> exportingChunks, float partialTicks){
         Entity entity = Minecraft.getMinecraft().getRenderViewEntity();
         if (entity == null) return;
 
@@ -48,15 +48,22 @@ public class RenderHandler {
             double my = Math.min(pos1.getY(), pos2.getY());
             double mz = Math.min(pos1.getZ(), pos2.getZ());
 
-            if (chunks != null) {
-                for (int[] chunkXZ : chunks) {
+            if (unExportedChunks != null) {
+                for (int[] chunkXZ : unExportedChunks) {
                     Color c = new Color(255, 255, 0,128);
                     drawChunkRange(bufferBuilder, mx, my, mz, Mx, My, Mz, chunkXZ, c, .1f);
                 }
             } else {
-                chunks = new Range(pos1, pos2).getChunks();
-                for (int[] chunkXZ : chunks) {
+                unExportedChunks = new Range(pos1, pos2).getChunks();
+                for (int[] chunkXZ : unExportedChunks) {
                     Color c = new Color(255, 255, 0,128);
+                    drawChunkRange(bufferBuilder, mx, my, mz, Mx, My, Mz, chunkXZ, c, .1f);
+                }
+            }
+
+            if (exportingChunks != null) {
+                for (int[] chunkXZ : exportingChunks) {
+                    Color c = new Color(0, 255, 255,128);
                     drawChunkRange(bufferBuilder, mx, my, mz, Mx, My, Mz, chunkXZ, c, .1f);
                 }
             }

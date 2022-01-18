@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -37,8 +38,8 @@ public class CTMHandler {
 
 //    Map<String, CTMMethod> locationCache = new HashMap<>();
 //    ArrayList<CTMMethod> methods = new ArrayList<>();
-    Map<ResourceLocation, HashSet<CTMMethod>> tileMatches = new HashMap();
-    Map<Block, HashSet<CTMMethod>> blockMatches = new HashMap<>();
+    Map<ResourceLocation, HashSet<CTMMethod>> tileMatches = new ConcurrentHashMap<>();
+    Map<Block, HashSet<CTMMethod>> blockMatches = new ConcurrentHashMap<>();
 
     String ctmDir = "assets/minecraft/mcpatcher/ctm/";
 

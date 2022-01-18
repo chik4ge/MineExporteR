@@ -20,10 +20,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TextureHandler {
 
-    private static final Map<ResourceLocation, BufferedImage> texCache = new HashMap<>();
+    private static final Map<ResourceLocation, BufferedImage> texCache = new ConcurrentHashMap<>();
 
     private int width;
     private int height;
