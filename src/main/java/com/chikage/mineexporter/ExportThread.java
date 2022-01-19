@@ -54,6 +54,7 @@ public class ExportThread implements Runnable {
     }
 
     public void run(){
+        long startTime = System.currentTimeMillis();
         try {
             if (!isPosSet()) {
                 sendErrorMessage("set pos1 and pos2 first.");
@@ -99,7 +100,7 @@ public class ExportThread implements Runnable {
 
             Main.logger.info("start chunk loading");
 
-            ExecutorService executor = Executors.newFixedThreadPool(2);
+            ExecutorService executor = Executors.newFixedThreadPool(6);
             Set<int[]> c = unExportedChunks;
             while (!c.isEmpty()) {
                 Set<int[]> exportedChunks = new CopyOnWriteArraySet<>();
@@ -175,6 +176,9 @@ public class ExportThread implements Runnable {
             unExportedChunks = null;
         }
         sendSuccessMessage("successfully exported.");
+
+        long endTime = System.currentTimeMillis();
+        sendSuccessMessage("elapsed " + (endTime-startTime)/1000.0 + "s");
     }
 
     private void initChunksData(Set<int[]> initVal) {
