@@ -28,11 +28,13 @@ import java.util.stream.Collectors;
 import static net.minecraft.client.Minecraft.getMinecraft;
 
 public class ModelExporter extends BlockExporter{
-    public ModelExporter() {
+
+    public ModelExporter(ExportContext expCtx, IBlockState state, BlockPos pos) {
+        super(expCtx, state, pos);
     }
 
     @Override
-    public boolean export(ExportContext expCtx, IBlockState state, BlockPos pos) {
+    public boolean export(Set<Vertex> vertices, Set<UV> uvs, Map<String, Set<Face>> faces, Set<Mtl> mtls) {
         IBakedModel model = expCtx.bms.getModelForState(state);
         List<Face> modelFaces = new ArrayList<>();
         for (EnumFacing facing : ArrayUtils.addAll(EnumFacing.VALUES, new EnumFacing[]{null})) {
@@ -68,8 +70,8 @@ public class ModelExporter extends BlockExporter{
 //                    普通にあとからレンダリングされてるからレイヤーっぽく見えるだけだった
 //                    同じブロック内で重なる箇所があり、かつレンダリング方法がCUTOUT系ならその面についてテクスチャをまとめる処理を入れる
 
-                if (!expCtx.mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
-
+                List<String> mtlNames = mtls.stream().map(Mtl::getName).collect(Collectors.toList());
+                if (!mtlNames.contains(texName)) {
                     try {
                         texture = texHandler.getBaseTextureImage(expCtx.rm);
                     } catch (IOException e) {
@@ -107,7 +109,7 @@ public class ModelExporter extends BlockExporter{
 
                     Mtl mtl = Mtls.create(texName);
                     mtl.setMapKd(texLocation);
-                    expCtx.mtls.add(mtl);
+                    mtls.add(mtl);
                 }
 
                 int textureWidth = texHandler.getTextureWidth();
@@ -180,13 +182,13 @@ public class ModelExporter extends BlockExporter{
                     }
                 }
                 modelFaces.add(face);
-                Collections.addAll(expCtx.vertices, face.vertex);
-                Collections.addAll(expCtx.uvs, face.uv);
+                Collections.addAll(vertices, face.vertex);
+                Collections.addAll(uvs, face.uv);
 
-                if (expCtx.faces.containsKey(texName)) {
-                    expCtx.faces.get(texName).add(face);
+                if (faces.containsKey(texName)) {
+                    faces.get(texName).add(face);
                 } else {
-                    expCtx.faces.put(texName, new CopyOnWriteArraySet<>(Collections.singletonList(face)));
+                    faces.put(texName, new CopyOnWriteArraySet<>(Collections.singletonList(face)));
                 }
             }
         }
