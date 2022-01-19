@@ -37,6 +37,7 @@ public class ModelExporter extends BlockExporter{
     public boolean export(Set<Vertex> vertices, Set<UV> uvs, Map<String, Set<Face>> faces, Set<Mtl> mtls) {
         IBakedModel model = expCtx.bms.getModelForState(state);
         List<Face> modelFaces = new ArrayList<>();
+        float[] offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
         for (EnumFacing facing : ArrayUtils.addAll(EnumFacing.VALUES, new EnumFacing[]{null})) {
             if (facing != null && !state.shouldSideBeRendered(expCtx.worldIn, pos, facing)) continue;
 
@@ -66,9 +67,6 @@ public class ModelExporter extends BlockExporter{
                     tintRGB = getMinecraft().getBlockColors().colorMultiplier(state, expCtx.worldIn, pos, quad.getTintIndex());
                     texName += "-" + Integer.toHexString(tintRGB);
                 }
-//                    TODO 草の側面が正しく描画されない、ctmのoverlayの様子も見ながら実装
-//                    普通にあとからレンダリングされてるからレイヤーっぽく見えるだけだった
-//                    同じブロック内で重なる箇所があり、かつレンダリング方法がCUTOUT系ならその面についてテクスチャをまとめる処理を入れる
 
                 List<String> mtlNames = mtls.stream().map(Mtl::getName).collect(Collectors.toList());
                 if (!mtlNames.contains(texName)) {
@@ -95,13 +93,13 @@ public class ModelExporter extends BlockExporter{
                     }
 
                     String texLocation = "textures/" + texName + ".png";
-                    try {
-                        texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
-                    } catch (IOException e) {
-//                        noError = false;
-                        Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
-                        e.printStackTrace();
-                    }
+//                    try {
+//                        texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
+//                    } catch (IOException e) {
+////                        noError = false;
+//                        Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
+//                        e.printStackTrace();
+//                    }
 
                     Mtl mtl = Mtls.create(texName);
                     mtl.setMapKd(texLocation);
@@ -127,11 +125,9 @@ public class ModelExporter extends BlockExporter{
                 for (int i = 0; i < 4; i++) {
                     int index = i * 7;
 
-                    Vec3d offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
-
-                    float x = round(Float.intBitsToFloat(vData[index    ]) + (float)offset.x, 1000000);
-                    float y = round(Float.intBitsToFloat(vData[index + 1]) + (float)offset.y, 1000000);
-                    float z = round(Float.intBitsToFloat(vData[index + 2]) + (float)offset.z, 1000000);
+                    float x = round(Float.intBitsToFloat(vData[index    ]), 1000000) + offset[0];
+                    float y = round(Float.intBitsToFloat(vData[index + 1]), 1000000) + offset[1];
+                    float z = round(Float.intBitsToFloat(vData[index + 2]), 1000000) + offset[2];
 
                     float u =    round(quad.getSprite().getUnInterpolatedU(Float.intBitsToFloat(vData[index + 4]))/16, textureWidth);
                     float v = 1F-round(quad.getSprite().getUnInterpolatedV(Float.intBitsToFloat(vData[index + 5]))/16, textureHeight);
@@ -152,19 +148,19 @@ public class ModelExporter extends BlockExporter{
                 }
 
 //                過去に追加したFaceと座標が重複した場合法線方向に少しずらす
-                Vec3d n1 = face.getNormal();
-                for (Face f: modelFaces) {
-                    if (face.hasSameVertex(f)) {
-                        Vec3d n2 = f.getNormal();
-                        double dot = n1.dotProduct(n2);
-                        if (dot > 0) {
-                            face.moveTo(n1, 0.001);
-                        } else {
-                            face.moveTo(n1, 0.0005);
-                            f.moveTo(n2, 0.0005);
-                        }
-                    }
-                }
+//                Vec3d n1 = face.getNormal();
+//                for (Face f: modelFaces) {
+//                    if (face.hasSameVertex(f)) {
+//                        Vec3d n2 = f.getNormal();
+//                        double dot = n1.dotProduct(n2);
+//                        if (dot > 0) {
+//                            face.moveTo(n1, 0.001);
+//                        } else {
+//                            face.moveTo(n1, 0.0005);
+//                            f.moveTo(n2, 0.0005);
+//                        }
+//                    }
+//                }
                 modelFaces.add(face);
                 Collections.addAll(vertices, face.vertex);
                 Collections.addAll(uvs, face.uv);

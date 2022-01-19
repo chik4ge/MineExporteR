@@ -23,9 +23,11 @@ public abstract class BlockExporter {
         this.pos = pos;
     }
 
-    protected Vec3d getOffset(IBlockAccess worldIn, IBlockState state, BlockPos pos, BlockPos origin) {
-        return state.getOffset(worldIn, pos)
+    protected float[] getOffset(IBlockAccess worldIn, IBlockState state, BlockPos pos, BlockPos origin) {
+        Vec3d offset = state.getOffset(worldIn, pos)
                 .add(pos.getX() - origin.getX(), pos.getY() - origin.getY(), pos.getZ() - origin.getZ());
+
+        return new float[]{(float)offset.x, (float)offset.y, (float)offset.z};
     }
 
     public abstract boolean export(Set<Vertex> vertices, Set<UV> uvs, Map<String, Set<Face>> faces, Set<Mtl> mtls);
