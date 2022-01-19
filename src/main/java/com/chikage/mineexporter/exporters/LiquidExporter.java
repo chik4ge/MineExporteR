@@ -24,16 +24,14 @@ import net.minecraft.world.IBlockAccess;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
 
 public class LiquidExporter extends BlockExporter{
-    static final TextureAtlasSprite[] atlasSpritesLava = new TextureAtlasSprite[2];;
-    static final TextureAtlasSprite[] atlasSpritesWater = new TextureAtlasSprite[2];;
+    static final TextureAtlasSprite[] atlasSpritesLava = new TextureAtlasSprite[2];
+    static final TextureAtlasSprite[] atlasSpritesWater = new TextureAtlasSprite[2];
     static final TextureAtlasSprite atlasSpriteWaterOverlay;
 
     static {
@@ -46,12 +44,13 @@ public class LiquidExporter extends BlockExporter{
     }
 
 
-    public LiquidExporter() {
+    public LiquidExporter(ExportContext expCtx, IBlockState state, BlockPos pos) {
+        super(expCtx, state, pos);
     }
 
 //    TODO implement
     @Override
-    public boolean export(ExportContext expCtx, IBlockState state, BlockPos pos) {
+    public boolean export(Set<Vertex> verticesIn, Set<UV> uvsIn, Map<String, Set<Face>> facesIn, Set<Mtl> mtlsIn) {
         TextureHandler texHandler;
 
 //                    BlockFluidRenderほぼそのまま実装
@@ -87,7 +86,7 @@ public class LiquidExporter extends BlockExporter{
                 TextureAtlasSprite textureatlassprite = slopeAngle > -999.0F ? atextureatlassprite[1] : atextureatlassprite[0];
                 texHandler = new TextureHandler(textureatlassprite);
                 String texName = texHandler.getTextureName();
-                if (!expCtx.mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
+                if (!mtlsIn.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
                     BufferedImage texture;
                     try {
                         texture = texHandler.getBaseTextureImage(expCtx.rm);
@@ -112,7 +111,7 @@ public class LiquidExporter extends BlockExporter{
 
                     Mtl mtl = Mtls.create(texName);
                     mtl.setMapKd(texLocation);
-                    expCtx.mtls.add(mtl);
+                    mtlsIn.add(mtl);
                 }
 
                 NWy -= 0.001F;
@@ -161,21 +160,21 @@ public class LiquidExporter extends BlockExporter{
                 Vertex[] vertices = {v1, v2, v3, v4};
                 UV[] uvs = {uv1, uv2, uv3, uv4};
 
-                Collections.addAll(expCtx.vertices, vertices);
-                Collections.addAll(expCtx.uvs, uvs);
+                Collections.addAll(verticesIn, vertices);
+                Collections.addAll(uvsIn, uvs);
 
                 Face face = new Face(vertices, uvs);
-                if (expCtx.faces.containsKey(texName)) {
-                    expCtx.faces.get(texName).add(face);
+                if (facesIn.containsKey(texName)) {
+                    facesIn.get(texName).add(face);
                 } else {
-                    expCtx.faces.put(texName, new HashSet<>(Arrays.asList(face)));
+                    facesIn.put(texName, new HashSet<>(Arrays.asList(face)));
                 }
             }
 
             if (renderDOWN) {
                 texHandler = new TextureHandler(atextureatlassprite[0]);
                 String texName = texHandler.getTextureName();
-                if (!expCtx.mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
+                if (!mtlsIn.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
                     BufferedImage texture;
                     try {
                         texture = texHandler.getBaseTextureImage(expCtx.rm);
@@ -199,7 +198,7 @@ public class LiquidExporter extends BlockExporter{
 
                     Mtl mtl = Mtls.create(texName);
                     mtl.setMapKd(texLocation);
-                    expCtx.mtls.add(mtl);
+                    mtlsIn.add(mtl);
                 }
 
                 float minU = atextureatlassprite[0].getMinU();
@@ -219,14 +218,14 @@ public class LiquidExporter extends BlockExporter{
                 Vertex[] vertices = {v1, v2, v3, v4};
                 UV[] uvs = {uv1, uv2, uv3, uv4};
 
-                Collections.addAll(expCtx.vertices, vertices);
-                Collections.addAll(expCtx.uvs, uvs);
+                Collections.addAll(verticesIn, vertices);
+                Collections.addAll(uvsIn, uvs);
 
                 Face face = new Face(vertices, uvs);
-                if (expCtx.faces.containsKey(texName)) {
-                    expCtx.faces.get(texName).add(face);
+                if (facesIn.containsKey(texName)) {
+                    facesIn.get(texName).add(face);
                 } else {
-                    expCtx.faces.put(texName, new HashSet<>(Arrays.asList(face)));
+                    facesIn.put(texName, new HashSet<>(Arrays.asList(face)));
                 }
             }
 
@@ -260,9 +259,9 @@ public class LiquidExporter extends BlockExporter{
 
                 if (!isLava)
                 {
-                    IBlockState lavstate = expCtx.worldIn.getBlockState(blockpos);
+                    IBlockState lavaState = expCtx.worldIn.getBlockState(blockpos);
 
-                    if (lavstate.getBlockFaceShape(expCtx.worldIn, blockpos, EnumFacing.VALUES[i1+2].getOpposite()) == BlockFaceShape.SOLID)
+                    if (lavaState.getBlockFaceShape(expCtx.worldIn, blockpos, EnumFacing.VALUES[i1+2].getOpposite()) == BlockFaceShape.SOLID)
                     {
                         textureatlassprite1 = atlasSpriteWaterOverlay;
                     }
@@ -270,7 +269,7 @@ public class LiquidExporter extends BlockExporter{
 
                 texHandler = new TextureHandler(textureatlassprite1);
                 String texName = texHandler.getTextureName();
-                if (!expCtx.mtls.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
+                if (!mtlsIn.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
                     BufferedImage texture;
                     try {
                         texture = texHandler.getBaseTextureImage(expCtx.rm);
@@ -294,7 +293,7 @@ public class LiquidExporter extends BlockExporter{
 
                     Mtl mtl = Mtls.create(texName);
                     mtl.setMapKd(texLocation);
-                    expCtx.mtls.add(mtl);
+                    mtlsIn.add(mtl);
                 }
 
                 if (renderSIDEs[i1])
@@ -365,14 +364,14 @@ public class LiquidExporter extends BlockExporter{
                     Vertex[] vertices = {v1, v2, v3, v4};
                     UV[] uvs = {uv1, uv2, uv3, uv4};
 
-                    Collections.addAll(expCtx.vertices, vertices);
-                    Collections.addAll(expCtx.uvs, uvs);
+                    Collections.addAll(verticesIn, vertices);
+                    Collections.addAll(uvsIn, uvs);
 
                     Face face = new Face(vertices, uvs);
-                    if (expCtx.faces.containsKey(texName)) {
-                        expCtx.faces.get(texName).add(face);
+                    if (facesIn.containsKey(texName)) {
+                        facesIn.get(texName).add(face);
                     } else {
-                        expCtx.faces.put(texName, new HashSet<>(Arrays.asList(face)));
+                        facesIn.put(texName, new HashSet<>(Arrays.asList(face)));
                     }
                 }
             }
