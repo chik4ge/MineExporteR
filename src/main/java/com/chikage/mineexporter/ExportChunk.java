@@ -62,7 +62,13 @@ public class ExportChunk implements Runnable{
 //        できる限りスレッドセーフなオブジェクトにはアクセスしないようチャンクごとにまとめて処理
         expCtx.vertices.addAll(vertices);
         expCtx.uvs.addAll(uvs);
-        expCtx.faces.putAll(faces);
+        for (Map.Entry<String, Set<Face>> entry : faces.entrySet()) {
+            if (expCtx.faces.containsKey(entry.getKey())) {
+                expCtx.faces.get(entry.getKey()).addAll(entry.getValue());
+            } else {
+                expCtx.faces.put(entry.getKey(), entry.getValue());
+            }
+        }
         expCtx.mtls.addAll(mtls);
         expCtx.incProcessedBlocks(range.getSize());
         Main.logger.info("finished import chunk at " + chunk.x +"," + chunk.z);
