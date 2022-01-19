@@ -70,6 +70,7 @@ public class LiquidExporter extends BlockExporter{
                 state.shouldSideBeRendered(expCtx.worldIn, pos, EnumFacing.WEST),
                 state.shouldSideBeRendered(expCtx.worldIn, pos, EnumFacing.EAST)
         };
+        float[] offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
 
         if (!renderUP && !renderDOWN && !renderSIDEs[0] && !renderSIDEs[1] && !renderSIDEs[2] && !renderSIDEs[3]) {
             return true;
@@ -148,11 +149,10 @@ public class LiquidExporter extends BlockExporter{
                     NEv = textureatlassprite.getInterpolatedV(8.0F + (-f22 - f21) * 16.0F);
                 }
 
-                Vec3d offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
-                Vertex v1 = new Vertex((float) offset.x, (float) offset.y + NWy, (float) offset.z);
-                Vertex v2 = new Vertex((float) offset.x, (float) offset.y + SWy, (float) offset.z + 1F);
-                Vertex v3 = new Vertex((float) offset.x + 1F, (float) offset.y + SEy, (float) offset.z + 1F);
-                Vertex v4 = new Vertex((float) offset.x + 1F, (float) offset.y + NEy, (float) offset.z);
+                Vertex v1 = new Vertex(offset[0], offset[1] + NWy, offset[2]);
+                Vertex v2 = new Vertex(offset[0], offset[1] + SWy, offset[2] + 1F);
+                Vertex v3 = new Vertex(offset[0] + 1F, offset[1] + SEy, offset[2] + 1F);
+                Vertex v4 = new Vertex(offset[0] + 1F, offset[1] + NEy, offset[2]);
                 UV uv1 = new UV(NWu, NWv);
                 UV uv2 = new UV(SWu, SWv);
                 UV uv3 = new UV(SEu, SEv);
@@ -206,11 +206,10 @@ public class LiquidExporter extends BlockExporter{
                 float minV = atextureatlassprite[0].getMinV();
                 float maxV = atextureatlassprite[0].getMaxV();
 
-                Vec3d offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
-                Vertex v1 = new Vertex((float) offset.x, (float) offset.y, (float) offset.z + 1F);
-                Vertex v2 = new Vertex((float) offset.x, (float) offset.y, (float) offset.z);
-                Vertex v3 = new Vertex((float) offset.x + 1F, (float) offset.y, (float) offset.z);
-                Vertex v4 = new Vertex((float) offset.x + 1F, (float) offset.y, (float) offset.z + 1F);
+                Vertex v1 = new Vertex(offset[0], offset[1], offset[2] + 1F);
+                Vertex v2 = new Vertex(offset[0], offset[1], offset[2]);
+                Vertex v3 = new Vertex(offset[0] + 1F, offset[1], offset[2]);
+                Vertex v4 = new Vertex(offset[0] + 1F, offset[1], offset[2] + 1F);
                 UV uv1 = new UV(minU, maxV);
                 UV uv2 = new UV(minU, minV);
                 UV uv3 = new UV(maxU, minV);
@@ -305,42 +304,41 @@ public class LiquidExporter extends BlockExporter{
                     double d5;
                     double d6;
 
-                    Vec3d offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
                     if (i1 == 0)
                     {
                         f39 = NWy;
                         f40 = NEy;
-                        d3 = offset.x;
-                        d5 = offset.x + 1.0D;
-                        d4 = offset.z + 0.0010000000474974513D;
-                        d6 = offset.z + 0.0010000000474974513D;
+                        d3 = offset[0];
+                        d5 = offset[0] + 1.0D;
+                        d4 = offset[2] + 0.0010000000474974513D;
+                        d6 = offset[2] + 0.0010000000474974513D;
                     }
                     else if (i1 == 1)
                     {
                         f39 = SEy;
                         f40 = SWy;
-                        d3 = offset.x + 1.0D;
-                        d5 = offset.x;
-                        d4 = offset.z + 1.0D - 0.0010000000474974513D;
-                        d6 = offset.z + 1.0D - 0.0010000000474974513D;
+                        d3 = offset[0] + 1.0D;
+                        d5 = offset[0];
+                        d4 = offset[2] + 1.0D - 0.0010000000474974513D;
+                        d6 = offset[2] + 1.0D - 0.0010000000474974513D;
                     }
                     else if (i1 == 2)
                     {
                         f39 = SWy;
                         f40 = NWy;
-                        d3 = offset.x + 0.0010000000474974513D;
-                        d5 = offset.x + 0.0010000000474974513D;
-                        d4 = offset.z + 1.0D;
-                        d6 = offset.z;
+                        d3 = offset[0] + 0.0010000000474974513D;
+                        d5 = offset[0] + 0.0010000000474974513D;
+                        d4 = offset[2] + 1.0D;
+                        d6 = offset[2];
                     }
                     else
                     {
                         f39 = NEy;
                         f40 = SEy;
-                        d3 = offset.x + 1.0D - 0.0010000000474974513D;
-                        d5 = offset.x + 1.0D - 0.0010000000474974513D;
-                        d4 = offset.z;
-                        d6 = offset.z + 1.0D;
+                        d3 = offset[0] + 1.0D - 0.0010000000474974513D;
+                        d5 = offset[0] + 1.0D - 0.0010000000474974513D;
+                        d4 = offset[2];
+                        d6 = offset[2] + 1.0D;
                     }
 
                     float f41 = textureatlassprite1.getInterpolatedU(0.0D);
@@ -353,10 +351,10 @@ public class LiquidExporter extends BlockExporter{
 //                                int l = j & 65535;
 //                                float f31 = i1 < 2 ? 0.8F : 0.6F;
 
-                    Vertex v1 = new Vertex((float) d3, (float) offset.y + f39, (float) d4);
-                    Vertex v2 = new Vertex((float) d5, (float) offset.y + f40, (float) d6);
-                    Vertex v3 = new Vertex((float) d5, (float) offset.y, (float) d6);
-                    Vertex v4 = new Vertex((float) d3, (float) offset.y, (float) d4);
+                    Vertex v1 = new Vertex((float) d3, offset[1] + f39, (float) d4);
+                    Vertex v2 = new Vertex((float) d5, offset[1] + f40, (float) d6);
+                    Vertex v3 = new Vertex((float) d5, offset[1], (float) d6);
+                    Vertex v4 = new Vertex((float) d3, offset[1], (float) d4);
                     UV uv1 = new UV(f41, f28);
                     UV uv2 = new UV(f27, f29);
                     UV uv3 = new UV(f27, f30);
