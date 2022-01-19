@@ -82,10 +82,6 @@ public class ModelExporter extends BlockExporter{
                     }
                     if (texture == null) continue;
 
-//                    if (texHandler.hasAnimation()) {
-//                        texture = texHandler.getAnimatedTexture(texture);
-//                    }
-
                     try {
                         if (!ctmName.equals("none")) texHandler.setConnectedImage(expCtx.rm, texture, expCtx.ctmHandler);
                     } catch (IOException | ArrayIndexOutOfBoundsException e) {
@@ -133,24 +129,12 @@ public class ModelExporter extends BlockExporter{
 
                     Vec3d offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
 
-                    double d1 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index])).toString());
-                    double d2 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+1])).toString());
-                    double d3 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+2])).toString());
-//                    double d4 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+3])).toString());
-                    double d5 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+4])).toString());
-                    double d6 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[index+5])).toString());
-                    double d7 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[(index+14)%21 + 4])).toString());
-                    double d8 = Double.parseDouble(((Float) Float.intBitsToFloat(vData[(index+14)%21 + 5])).toString());
+                    float x = round(Float.intBitsToFloat(vData[index    ]) + (float)offset.x, 1000000);
+                    float y = round(Float.intBitsToFloat(vData[index + 1]) + (float)offset.y, 1000000);
+                    float z = round(Float.intBitsToFloat(vData[index + 2]) + (float)offset.z, 1000000);
 
-                    double d9  = quad.getSprite().getUnInterpolatedU((float) ((d5 - d7*.001)/.999))/16.0;
-                    double d10 = quad.getSprite().getUnInterpolatedV((float) ((d6 - d8*.001)/.999))/16.0;
-
-                    float x = ((float)Math.round((d1 + offset.x)*1000000))/1000000;
-                    float y = ((float)Math.round((d2 + offset.y)*1000000))/1000000;
-                    float z = ((float)Math.round((d3 + offset.z)*1000000))/1000000;
-
-                    float u = (float) Math.round(d9*textureWidth)/textureWidth;
-                    float v = 1F-(float) Math.round(d10*textureHeight)/textureHeight;
+                    float u =    round(quad.getSprite().getUnInterpolatedU(Float.intBitsToFloat(vData[index + 4]))/16, textureWidth);
+                    float v = 1F-round(quad.getSprite().getUnInterpolatedV(Float.intBitsToFloat(vData[index + 5]))/16, textureHeight);
 
                     if (texHandler.hasAnimation()) {
                         v = texHandler.getAnimatedV(v);
@@ -194,5 +178,11 @@ public class ModelExporter extends BlockExporter{
         }
 
         return true;
+    }
+
+    private float round(float i, int base) {
+        float x = i*base;
+        int n = (x + 0.5) > 0 ? (int) (x + 0.5) : (int) (x - 0.49999999999999D);
+        return (float) n / base;
     }
 }
