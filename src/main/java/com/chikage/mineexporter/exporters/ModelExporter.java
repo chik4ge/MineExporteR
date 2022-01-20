@@ -4,9 +4,6 @@ import com.chikage.mineexporter.Main;
 import com.chikage.mineexporter.TextureHandler;
 import com.chikage.mineexporter.ctm.CTMContext;
 import com.chikage.mineexporter.utils.ExportContext;
-import com.chikage.mineexporter.utils.Face;
-import com.chikage.mineexporter.utils.UV;
-import com.chikage.mineexporter.utils.Vertex;
 import de.javagl.obj.Mtl;
 import de.javagl.obj.Mtls;
 import net.minecraft.block.state.IBlockState;
@@ -14,7 +11,6 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextFormatting;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -34,15 +30,15 @@ public class ModelExporter extends BlockExporter{
     }
 
     @Override
-    public boolean export(Set<Vertex> vertices, Set<UV> uvs, Map<String, Set<Face>> faces, Set<Mtl> mtls) {
+    public boolean export(Map<String, Set<float[][][]>> faces, Set<Mtl> mtls) {
         IBakedModel model = expCtx.bms.getModelForState(state);
-        List<Face> modelFaces = new ArrayList<>();
+        List<float[][][]> modelFaces = new ArrayList<>();
         float[] offset = getOffset(expCtx.worldIn, state, pos, expCtx.range.getOrigin());
         for (EnumFacing facing : ArrayUtils.addAll(EnumFacing.VALUES, new EnumFacing[]{null})) {
             if (facing != null && !state.shouldSideBeRendered(expCtx.worldIn, pos, facing)) continue;
 
             for (BakedQuad quad : model.getQuads(state, facing, 0)) {
-                Face face = new Face(new Vertex[4], new UV[4]);
+                float[][][] face = new float[4][2][3]; /* xyz , uv* */
 
                 CTMContext ctx = new CTMContext(expCtx.worldIn, quad, pos);
                 TextureHandler texHandler = new TextureHandler(quad.getSprite(), expCtx.ctmHandler, ctx);
@@ -93,13 +89,13 @@ public class ModelExporter extends BlockExporter{
                     }
 
                     String texLocation = "textures/" + texName + ".png";
-//                    try {
-//                        texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
-//                    } catch (IOException e) {
-////                        noError = false;
-//                        Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
-//                        e.printStackTrace();
-//                    }
+                    try {
+                        texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
+                    } catch (IOException e) {
+//                        noError = false;
+                        Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
+                        e.printStackTrace();
+                    }
 
                     Mtl mtl = Mtls.create(texName);
                     mtl.setMapKd(texLocation);
@@ -140,30 +136,29 @@ public class ModelExporter extends BlockExporter{
 //                                float nx = (byte) ((nv) & 0xFF) / 127.0F;
 //                                float ny = (byte) ((nv >> 8) & 0xFF) / 127.0F;
 //                                float nz = (byte) ((nv >> 16) & 0xFF) / 127.0F;
-                    Vertex vertex = new Vertex(x,y,z);
-                    UV uv = new UV(u, v);
 
-                    face.vertex[i] = vertex;
-                    face.uv[i] = uv;
+                    face[i][0][0] = x;
+                    face[i][0][1] = y;
+                    face[i][0][2] = z;
+                    face[i][1][0] = u;
+                    face[i][1][1] = v;
                 }
 
 //                過去に追加したFaceと座標が重複した場合法線方向に少しずらす
-//                Vec3d n1 = face.getNormal();
-//                for (Face f: modelFaces) {
-//                    if (face.hasSameVertex(f)) {
-//                        Vec3d n2 = f.getNormal();
-//                        double dot = n1.dotProduct(n2);
-//                        if (dot > 0) {
-//                            face.moveTo(n1, 0.001);
-//                        } else {
-//                            face.moveTo(n1, 0.0005);
-//                            f.moveTo(n2, 0.0005);
-//                        }
-//                    }
-//                }
+                float[] n1 = calcNormal(face);
+                for (float[][][] f: modelFaces) {
+                    if (hasSameVertex(f, face)) {
+                        float[] n2 = calcNormal(f);
+                        float dot = dotProduct(n1, n2);
+                        if (dot > 0) {
+                            moveFaceTo(face, n1, 0.001f);
+                        } else {
+                            moveFaceTo(face, n1, 0.0005f);
+                            moveFaceTo(f, n2, 0.0005f);
+                        }
+                    }
+                }
                 modelFaces.add(face);
-                Collections.addAll(vertices, face.vertex);
-                Collections.addAll(uvs, face.uv);
 
                 if (faces.containsKey(texName)) {
                     faces.get(texName).add(face);
@@ -180,5 +175,53 @@ public class ModelExporter extends BlockExporter{
         float x = i*base;
         int n = (x + 0.5) > 0 ? (int) (x + 0.5) : (int) (x - 0.49999999999999D);
         return (float) n / base;
+    }
+
+    private float[] calcNormal(float[][][] face) {
+        float[] v1 = new float[] {
+                face[1][0][0] - face[0][0][0], /* face[1*5 + 0] - face[0*5+ 0] */
+                face[1][0][1] - face[0][0][1], /* face[1*5 + 1] - face[0*5+ 1] */
+                face[1][0][2] - face[0][0][2], /* face[1*5 + 2] - face[0*5+ 2] */
+        };
+        float[] v2 = new float[] {
+                face[3][0][0] - face[0][0][0], /* face[3*5 + 0] - face[0*5+ 0] */
+                face[3][0][1] - face[0][0][1], /* face[3*5 + 1] - face[0*5+ 1] */
+                face[3][0][2] - face[0][0][2], /* face[3*5 + 2] - face[0*5+ 2] */
+        };
+
+        return crossProduct(v1, v2);
+    }
+
+    private float[] crossProduct(float[] v1, float[] v2) {
+        return normalize(new float[]{
+                v1[1] * v2[2] - v1[2] * v2[1], 
+                v1[2] * v2[0] - v1[0] * v2[2], 
+                v1[0] * v2[1] - v1[1] * v2[0]
+        });
+    }
+
+    private float dotProduct(float[] v1, float[] v2) {
+        return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
+    }
+
+    private boolean hasSameVertex(float[][][] f1, float[][][] f2) {
+        Set<float[]> v1 = new HashSet<>(Arrays.asList(f1[0][0], f1[1][0], f1[2][0], f1[3][0]));
+        Set<float[]> v2 = new HashSet<>(Arrays.asList(f2[0][0], f2[1][0], f2[2][0], f2[3][0]));
+
+        return v1.equals(v2);
+    }
+
+    private float[] normalize(float[] v) {
+        float d0 = (float)Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+        return d0 < 1.0E-4D ? new float[]{0, 0, 0} : new float[]{v[0] / d0, v[1] / d0, v[2] / d0};
+    }
+
+//    vec must be normalized
+    private void moveFaceTo(float[][][] face, float[] vec, float amount){
+        for (int i=0;i<4; i++) {
+            for (int j=0; j<3; j++) {
+                face[i][0][j] += amount*vec[j];
+            }
+        }
     }
 }

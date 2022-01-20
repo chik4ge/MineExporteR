@@ -1,31 +1,16 @@
 package com.chikage.mineexporter.exporters;
 
-import com.chikage.mineexporter.Main;
-import com.chikage.mineexporter.TextureHandler;
 import com.chikage.mineexporter.utils.ExportContext;
-import com.chikage.mineexporter.utils.Face;
-import com.chikage.mineexporter.utils.UV;
-import com.chikage.mineexporter.utils.Vertex;
 import de.javagl.obj.Mtl;
-import de.javagl.obj.Mtls;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
-import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.IBlockAccess;
 
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
 
@@ -47,9 +32,11 @@ public class LiquidExporter extends BlockExporter{
     public LiquidExporter(ExportContext expCtx, IBlockState state, BlockPos pos) {
         super(expCtx, state, pos);
     }
-
-//    TODO implement
     @Override
+    public boolean export(Map<String, Set<float[][][]>> faces, Set<Mtl> mtls){
+        return true;
+    }
+    /*@Override
     public boolean export(Set<Vertex> verticesIn, Set<UV> uvsIn, Map<String, Set<Face>> facesIn, Set<Mtl> mtlsIn) {
         TextureHandler texHandler;
 
@@ -375,7 +362,7 @@ public class LiquidExporter extends BlockExporter{
             }
         }
         return true;
-    }
+    }*/
 
     private float getFluidHeight(IBlockAccess blockAccess, BlockPos blockPosIn, Material blockMaterial) {
         int i = 0;
