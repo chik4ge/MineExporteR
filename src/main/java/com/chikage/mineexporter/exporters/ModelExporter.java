@@ -51,14 +51,6 @@ public class ModelExporter extends BlockExporter{
                 String ctmName = texHandler.getCTMName();
                 if (!ctmName.equals("none")) texName += "-" + ctmName;
 
-//                        TODO colormap実装
-//                    Biome biome = sender.getEntityWorld().getBiome(pos);
-//                    float temperature = biome.getTemperature(pos);
-//                    float rainfall = biome.getRainfall();
-//
-//                    float adjTemp = Math.max(Math.min(temperature, 1F), 0F);
-//                    float adjRainfall = Math.max(Math.min(rainfall, 1F), 0F)*adjTemp;
-
                 if (quad.hasTintIndex()) {
                     tintRGB = getMinecraft().getBlockColors().colorMultiplier(state, expCtx.worldIn, pos, quad.getTintIndex());
                     texName += "-" + Integer.toHexString(tintRGB);
@@ -205,10 +197,20 @@ public class ModelExporter extends BlockExporter{
     }
 
     private boolean hasSameVertex(float[][][] f1, float[][][] f2) {
-        Set<float[]> v1 = new HashSet<>(Arrays.asList(f1[0][0], f1[1][0], f1[2][0], f1[3][0]));
-        Set<float[]> v2 = new HashSet<>(Arrays.asList(f2[0][0], f2[1][0], f2[2][0], f2[3][0]));
 
-        return v1.equals(v2);
+        float[][] v1 = new float[][]{f1[0][0], f1[1][0], f1[2][0], f1[3][0]};
+        float[][] v2 = new float[][]{f2[0][0], f2[1][0], f2[2][0], f2[3][0]};
+
+        Arrays.sort(v1, (a, b) -> compareVec(a, b, 0));
+        Arrays.sort(v2, (a, b) -> compareVec(a, b, 0));
+
+        return Arrays.deepEquals(v1, v2);
+    }
+
+    private int compareVec(float[] v1, float[] v2, int i) {
+        int c = Float.compare(v1[i], v2[i]);
+        if (c == 0 && i <= 1) return compareVec(v1, v2, i+1);
+        else return c;
     }
 
     private float[] normalize(float[] v) {
