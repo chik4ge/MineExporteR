@@ -32,9 +32,7 @@ public class ExportChunk implements Runnable{
         Range chunkRange = Range.toRangeFromChunk(chunk);
         Range range = chunkRange.intersect(expCtx.range);
 
-        Set<Vertex> vertices = new HashSet<>();
-        Set<UV> uvs = new HashSet<>();
-        Map<String, Set<Face>> faces = new HashMap<>();
+        Map<String, Set<float[][][]>> faces = new HashMap<>();
         Set<Mtl> mtls = new HashSet<>();
 
         for (BlockPos pos : range) {
@@ -48,21 +46,19 @@ public class ExportChunk implements Runnable{
                     exporter = new ModelExporter(expCtx, state, pos);
                     break;
                 case LIQUID:
-                    exporter = new LiquidExporter(expCtx, state, pos);
+//                    exporter = new LiquidExporter(expCtx, state, pos);
                     break;
                 case ENTITYBLOCK_ANIMATED: break;
                 default: continue;
             }
 
             if (exporter != null) {
-                exporter.export(vertices, uvs, faces, mtls);
+                exporter.export(faces, mtls);
             }
         }
 
 //        できる限りスレッドセーフなオブジェクトにはアクセスしないようチャンクごとにまとめて処理
-        expCtx.vertices.addAll(vertices);
-        expCtx.uvs.addAll(uvs);
-        for (Map.Entry<String, Set<Face>> entry : faces.entrySet()) {
+        for (Map.Entry<String, Set<float[][][]>> entry : faces.entrySet()) {
             if (expCtx.faces.containsKey(entry.getKey())) {
                 expCtx.faces.get(entry.getKey()).addAll(entry.getValue());
             } else {

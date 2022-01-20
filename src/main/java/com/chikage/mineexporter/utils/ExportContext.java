@@ -23,9 +23,7 @@ public class ExportContext {
 
     public final Range range;
 
-    public final Set<Vertex> vertices;
-    public final Set<UV> uvs;
-    public final Map<String, Set<Face>> faces;
+    public final Map<String, Set<float[][][]>> faces;
     public final Set<Mtl> mtls;
 
     private long processedBlocks = 0;
@@ -39,9 +37,7 @@ public class ExportContext {
 
             Range range,
 
-            Set<Vertex> vertices,
-            Set<UV> uvs,
-            Map<String, Set<Face>> faces,
+            Map<String, Set<float[][][]>> faces,
             Set<Mtl> mtls
             ) {
 
@@ -57,8 +53,6 @@ public class ExportContext {
 
         this.range = range;
 
-        this.vertices = vertices;
-        this.uvs = uvs;
         this.faces = faces;
         this.mtls = mtls;
     }

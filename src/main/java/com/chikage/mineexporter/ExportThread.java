@@ -11,6 +11,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 
 import java.io.*;
+import java.nio.FloatBuffer;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -74,9 +75,9 @@ public class ExportThread implements Runnable {
 //            delete texture file
             deleteFile(new File("MineExporteR/textures"));
 
-            Set<Vertex> vertices = new CopyOnWriteArraySet<>();
-            Set<UV> uvs = new CopyOnWriteArraySet<>();
-            Map<String, Set<Face>> faces = new ConcurrentHashMap<>();
+            Set<float[]> vertices = new CopyOnWriteArraySet<>();
+            Set<float[]> uvs = new CopyOnWriteArraySet<>();
+            Map<String, Set<float[][][]>> faces = new ConcurrentHashMap<>();
 
             Obj obj = Objs.create();
             Set<Mtl> mtls = new CopyOnWriteArraySet<>();
@@ -90,8 +91,6 @@ public class ExportThread implements Runnable {
 
                     range,
 
-                    vertices,
-                    uvs,
                     faces,
                     mtls
                     );
@@ -126,28 +125,29 @@ public class ExportThread implements Runnable {
 
             Main.logger.info("finished chunk loading");
 
-            HashMap<Vertex, Integer> vertexIdMap = new HashMap<>();
+//            float配列だとHashCodeが想定通りに動作しないためFloatBufferを使用
+            HashMap<FloatBuffer, Integer> vertexIdMap = new HashMap<>();
 
-            HashMap<UV, Integer> uvIdMap = new HashMap<>();
+            HashMap<FloatBuffer, Integer> uvIdMap = new HashMap<>();
             int vertexId = 0;
             int uvId = 0;
-            for (Map.Entry<String, Set<Face>> facesOfMtl : faces.entrySet()) {
+            for (Map.Entry<String, Set<float[][][]>> facesOfMtl : faces.entrySet()) {
                 obj.setActiveMaterialGroupName(facesOfMtl.getKey());
-                for (Face face : facesOfMtl.getValue()) {
+                for (float[][][] face : facesOfMtl.getValue()) {
                     int[] vertexIndices = new int[4];
                     int[] uvIndices = new int[4];
                     for (int i=0; i<4; i++) {
-                        Vertex vertex = face.vertex[i];
+                        FloatBuffer vertex = FloatBuffer.wrap(face[i][0]);
                         if (!vertexIdMap.containsKey(vertex)) {
-                            obj.addVertex(vertex.x, vertex.y, vertex.z);
+                            obj.addVertex(vertex.get(0), vertex.get(1), vertex.get(2));
                             vertexIdMap.put(vertex, vertexId);
                             vertexId++;
                         }
                         vertexIndices[i] = vertexIdMap.get(vertex);
 
-                        UV uv = face.uv[i];
+                        FloatBuffer uv = FloatBuffer.wrap(face[i][1]);
                         if (!uvIdMap.containsKey(uv)) {
-                            obj.addTexCoord(uv.u, uv.v);
+                            obj.addTexCoord(uv.get(0), uv.get(1));
                             uvIdMap.put(uv, uvId);
                             uvId++;
                         }
