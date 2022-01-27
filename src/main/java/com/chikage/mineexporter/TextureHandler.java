@@ -9,70 +9,36 @@ import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
-import java.awt.image.DataBufferByte;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TextureHandler {
 
     private static final Map<ResourceLocation, BufferedImage> texCache = new ConcurrentHashMap<>();
+    private static final Set<ResourceLocation> nullTexCache = new HashSet<>();
 
-    private int width;
-    private int height;
-    private int frameCount = -1;
-    private String baseName;
-    private ResourceLocation baseTexLocation;
-    private CTMMethod ctmMethod;
-    private int ctmIndex = -1;
-    private int animationIndex = 0;
+    public static void setConnectedImage(BufferedImage image, IResourceManager rm, CTMHandler handler, String methodName, int index) throws IOException{
+        CTMMethod method = handler.getMethod(methodName);
+        if (method == null) throw new IOException("specified method name is not exist: " + methodName);
 
-    public TextureHandler(TextureAtlasSprite sprite) {
-        this.width = sprite.getIconWidth();
-        this.height = sprite.getIconHeight();
-
-        if (sprite.hasAnimationMetadata()) {
-            frameCount = sprite.getFrameCount();
-        }
-
-        String iconName = sprite.getIconName();
-        this.baseName = getSplitLast(iconName, "/");
-
-        ResourceLocation rawLocation = new ResourceLocation(iconName);
-        this.baseTexLocation = new ResourceLocation(rawLocation.getNamespace(), "textures/"+ rawLocation.getPath()+".png");
-    }
-
-    public TextureHandler(TextureAtlasSprite sprite, CTMHandler ctmHandler, CTMContext ctx) {
-        this(sprite);
-        ctmMethod = ctmHandler.getMethod(ctx, baseTexLocation);
-        if (ctmMethod != null) {
-            ctmIndex = ctmHandler.getTileIndex(ctmMethod, ctx);
-        }
-    }
-
-    public String getCTMName() {
-        if (ctmMethod == null) return "none";
-        return ctmMethod.getMethodName() + ctmIndex;
-    }
-
-    public void setConnectedImage(IResourceManager rm, BufferedImage image, CTMHandler handler) throws IOException{
-        if (ctmMethod instanceof MethodCTMCompact) {
+        if (method instanceof MethodCTMCompact) {
             BufferedImage[] images = new BufferedImage[5];
-            images[0] = handler.getTileBufferedImage(rm, ctmMethod, 0);
-            images[1] = handler.getTileBufferedImage(rm, ctmMethod, 1);
-            images[2] = handler.getTileBufferedImage(rm, ctmMethod, 2);
-            images[3] = handler.getTileBufferedImage(rm, ctmMethod, 3);
-            images[4] = handler.getTileBufferedImage(rm, ctmMethod, 4);
+            images[0] = handler.getTileBufferedImage(rm, method, 0);
+            images[1] = handler.getTileBufferedImage(rm, method, 1);
+            images[2] = handler.getTileBufferedImage(rm, method, 2);
+            images[3] = handler.getTileBufferedImage(rm, method, 3);
+            images[4] = handler.getTileBufferedImage(rm, method, 4);
 
-            int[] indices = handler.getCompactTileIndices(ctmIndex);
+            int[] indices = handler.getCompactTileIndices(index);
 
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {
@@ -82,7 +48,7 @@ public class TextureHandler {
             }
 
         } else {
-            BufferedImage newImage = handler.getTileBufferedImage(rm, ctmMethod, ctmIndex);
+            BufferedImage newImage = handler.getTileBufferedImage(rm, method, index);
 
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {
@@ -92,7 +58,7 @@ public class TextureHandler {
         }
     }
 
-    public void setColormapToImage(BufferedImage image, int tintRGB) {
+    public static void setColormapToImage(BufferedImage image, int tintRGB) {
         int tintR = tintRGB>>>16 & 0xFF;
         int tintG = tintRGB>>>8 & 0xFF;
         int tintB = tintRGB & 0xFF;
@@ -115,12 +81,8 @@ public class TextureHandler {
 
     }
 
-    public BufferedImage getBaseTextureImage(IResourceManager rm) throws IOException {
-        return getImage(rm, baseTexLocation);
-    }
-
-    public void save(BufferedImage image, Path output) throws IOException {
-        if (!Files.exists(output)) {
+    public static void save(BufferedImage image, Path output) throws IOException {
+        if (image != null && !Files.exists(output)) {
             if (!Files.exists(output.getParent())) {
                 Files.createDirectories(output.getParent());
             }
@@ -128,17 +90,14 @@ public class TextureHandler {
         }
     }
 
-    public int getTextureWidth() {return width;}
-    public int getTextureHeight() {return height;}
-    public String getTextureName() {return baseName;}
-
     private String getSplitLast(String s, String regex) {
         String[] splatted = s.split(regex);
         return splatted[splatted.length-1];
     }
 
-    public static BufferedImage getImage(IResourceManager rm, ResourceLocation location) throws IOException {
+    public static BufferedImage fetchImageCopy(IResourceManager rm, ResourceLocation location) throws IOException {
         if (texCache.containsKey(location)) return copyImage(texCache.get(location));
+        else if (nullTexCache.contains(location)) return null;
         else {
             try {
                 InputStream texInputStream = rm.getResource(location).getInputStream();
@@ -147,57 +106,29 @@ public class TextureHandler {
                 texInputStream.close();
                 return copyImage(image);
             } catch (IOException e) {
-                texCache.put(location, null);
+                nullTexCache.add(location);
                 throw e;
             }
         }
     }
 
 //    quote from https://stackoverflow.com/questions/3514158/how-do-you-clone-a-bufferedimage
-//    上2つはテクスチャがおかしくなるのでボツ
-//    原因はわからない
-    private static BufferedImage copyImage(BufferedImage source){
+    public static BufferedImage copyImage(BufferedImage source){
         if (source == null) return null;
-//        BufferedImage b = new BufferedImage(source.getWidth(), source.getHeight(), source.getType());
-//        Graphics g = b.createGraphics();
-//        g.drawImage(source, 0, 0, null);
-//        g.dispose();
-//        return b;
-//        BufferedImage bi = new BufferedImage(source.getWidth(), source.getHeight(), source.getType());
-//        byte[] sourceData = ((DataBufferByte)source.getRaster().getDataBuffer()).getData();
-//        byte[] biData = ((DataBufferByte)bi.getRaster().getDataBuffer()).getData();
-//        System.arraycopy(sourceData, 0, biData, 0, sourceData.length);
-//        return bi;
         ColorModel cm = source.getColorModel();
         boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
         WritableRaster raster = source.copyData(null);
         return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
     }
 
-    public boolean hasAnimation() {
-        return frameCount != -1;
-    }
+    public static void pasteImage(int xIn, int yIn, BufferedImage fromImage, BufferedImage toImage) {
+        for (int x = 0; x < fromImage.getWidth(); x++) {
+            for (int y = 0; y < fromImage.getHeight(); y++) {
 
-    public BufferedImage getAnimatedTexture(BufferedImage img, int frame) {
-        int aframe = frame%frameCount;
-        int h = img.getHeight();
-        int w = img.getWidth();
-        BufferedImage res = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        for (int y=0; y<h; y++) {
-            for (int x=0; x<w; x++) {
-                if (y>=aframe*w && y<(aframe+1)*w) {
-                    res.setRGB(x, y-(aframe*w), img.getRGB(x, y));
-                }
+                int argb = fromImage.getRGB(x,y);
+
+                toImage.setRGB(xIn + x, yIn + y, argb);
             }
         }
-        return res;
-    }
-
-    public BufferedImage getAnimatedTexture(BufferedImage img) {
-        return getAnimatedTexture(img, animationIndex);
-    }
-
-    public float getAnimatedV(float v) {
-        return Math.round((v * ((animationIndex%frameCount)+1)/frameCount)*(frameCount*height))/((float)frameCount*height);
     }
 }

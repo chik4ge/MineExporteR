@@ -3,6 +3,7 @@ package com.chikage.mineexporter;
 import com.chikage.mineexporter.utils.*;
 import de.javagl.obj.*;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
@@ -10,10 +11,13 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.FloatBuffer;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
 
@@ -77,7 +81,7 @@ public class ExportThread implements Runnable {
 
             Set<float[]> vertices = new CopyOnWriteArraySet<>();
             Set<float[]> uvs = new CopyOnWriteArraySet<>();
-            Map<String, Set<float[][][]>> faces = new ConcurrentHashMap<>();
+            Map<Texture, Set<float[][][]>> faces = new ConcurrentHashMap<>();
 
             Obj obj = Objs.create();
             Set<Mtl> mtls = new CopyOnWriteArraySet<>();
@@ -131,7 +135,8 @@ public class ExportThread implements Runnable {
             HashMap<FloatBuffer, Integer> uvIdMap = new HashMap<>();
             int vertexId = 0;
             int uvId = 0;
-            for (Map.Entry<String, Set<float[][][]>> facesOfMtl : faces.entrySet()) {
+            Map<String, Set<float[][][]>> fixedFaces = mergeTextures(faces, mtls);
+            for (Map.Entry<String, Set<float[][][]>> facesOfMtl : fixedFaces.entrySet()) {
                 obj.setActiveMaterialGroupName(facesOfMtl.getKey());
                 for (float[][][] face : facesOfMtl.getValue()) {
                     int[] vertexIndices = new int[4];
@@ -179,6 +184,109 @@ public class ExportThread implements Runnable {
 
         long endTime = System.currentTimeMillis();
         sendSuccessMessage("elapsed " + (endTime-startTime)/1000.0 + "s");
+    }
+
+    private Map<String, Set<float[][][]>> mergeTextures(Map<Texture, Set<float[][][]>> faces, Set<Mtl> mtls){
+        Map<String, Set<float[][][]>> result = new HashMap<>();
+        Map<String, Set<Texture>> texturesForMtl = new HashMap<>();
+
+//        Textureのidが重複する要素を集め、それをまとめて一つのテクスチャにする(できればソートしたい)
+//        その際UVも修正する必要があるのでやる
+
+        for (Texture texture : faces.keySet()) {
+            texturesForMtl.putIfAbsent(texture.getId(), new HashSet<>(Arrays.asList(texture)));
+
+            Set<Texture> textures = texturesForMtl.get(texture.getId());
+            textures.add(texture);
+        }
+
+        for (Map.Entry<String, Set<Texture>> e : texturesForMtl.entrySet()) {
+            String mtlName = e.getKey();
+            Set<Texture> textures = e.getValue();
+
+            List<Texture> sortedTextures = textures.stream()
+                    .sorted(Comparator.comparing(Texture::getCTMIndex)
+                    .thenComparing(Texture::getTintLuminance))
+                    .collect(Collectors.toList());
+
+            Set<float[][][]> facesForMtl = new HashSet<>();
+            result.put(mtlName, facesForMtl);
+
+            int texWidth = 16;
+            int texHeight = 16;
+            int mergedWidth = 16;
+            int mergedHeight = 16;
+            int COLUMN_NUM = 4;
+
+            BufferedImage image = null;
+            int texNum = textures.size();
+
+            int i = 0;
+            for (Texture texture : sortedTextures) {
+                ResourceLocation baseLocation = texture.getBaseTexLocation();
+                ResourceLocation location = new ResourceLocation(baseLocation.getNamespace(), "textures/"+ baseLocation.getPath()+".png");
+
+                BufferedImage baseImage = null;
+                try {
+                    baseImage = TextureHandler.fetchImageCopy(expCtx.rm, location);
+                } catch (IOException ioException) {
+                    continue;
+                }
+                if (baseImage == null) continue;
+
+                if (texture.getTextureType() == Texture.TextureType.CTM) {
+                    try {
+                        TextureHandler.setConnectedImage(baseImage, expCtx.rm, expCtx.ctmHandler, texture.getId(), texture.getCTMIndex());
+                    } catch (IOException ioException) {
+                        ioException.printStackTrace();
+                        continue;
+                    }
+                }
+                if (texture.getTintColor() != -1) {
+                    TextureHandler.setColormapToImage(baseImage, texture.getTintColor());
+                }
+
+                int column = i % COLUMN_NUM;
+                int row    = i / COLUMN_NUM;
+                if (i == 0) {
+                    texWidth = baseImage.getWidth();
+                    texHeight = baseImage.getHeight();
+//                    TODO 2のべき乗になるよう調整
+                    mergedWidth = texWidth * (texNum/COLUMN_NUM + 1);
+                    mergedHeight = texHeight * (Math.min(texNum, COLUMN_NUM));
+
+                    image = new BufferedImage(mergedWidth, mergedHeight, baseImage.getType());
+                }
+                TextureHandler.pasteImage(row*texWidth, column*texHeight, baseImage, image);
+
+                Set<float[][][]> rawFaces = faces.get(texture);
+
+                for (float[][][] rawFace : rawFaces) {
+                    for (int j = 0; j < 4; j++) {
+                        float u = rawFace[j][1][0];
+                        float v = rawFace[j][1][1];
+//                        texwidth = 16 ; u = 1.0 ; mergedWidth = 48 ; row = 0 -> 0.5
+//                        texHeight = 16, v = 1.0, mergedWidrh = 16, column = 0 -> 1.0
+                        rawFace[j][1][0] = MathHandler.round((u + row) * texWidth  / mergedWidth , mergedWidth);
+                        rawFace[j][1][1] = MathHandler.round(((v-column-1) * texHeight + mergedHeight) / mergedHeight, mergedHeight);
+                    }
+                }
+
+                facesForMtl.addAll(rawFaces);
+                i++;
+            }
+
+            String texLocation = "textures/" + mtlName.replace(":", "/") + ".png";
+            try {
+                TextureHandler.save(image, Paths.get("MineExporteR/" + texLocation));
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+            Mtl mtl = Mtls.create(mtlName);
+            mtl.setMapKd(texLocation);
+            mtls.add(mtl);
+        }
+        return result;
     }
 
     private void initChunksData(Set<int[]> initVal) {

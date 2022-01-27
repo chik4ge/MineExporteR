@@ -1,7 +1,7 @@
 package com.chikage.mineexporter.exporters;
 
 import com.chikage.mineexporter.utils.ExportContext;
-import de.javagl.obj.Mtl;
+import com.chikage.mineexporter.utils.Texture;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -27,5 +27,5 @@ public abstract class BlockExporter {
         return new float[]{(float)offset.x, (float)offset.y, (float)offset.z};
     }
 
-    public abstract boolean export(Map<String, Set<float[][][]>> faces, Set<Mtl> mtls);
+    public abstract boolean export(Map<Texture, Set<float[][][]>> faces);
 }
