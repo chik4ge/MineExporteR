@@ -1,7 +1,7 @@
 package com.chikage.mineexporter.exporters;
 
 import com.chikage.mineexporter.utils.ExportContext;
-import de.javagl.obj.Mtl;
+import com.chikage.mineexporter.utils.Texture;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -33,7 +33,7 @@ public class LiquidExporter extends BlockExporter{
         super(expCtx, state, pos);
     }
     @Override
-    public boolean export(Map<String, Set<float[][][]>> faces, Set<Mtl> mtls){
+    public boolean export(Map<Texture, Set<float[][][]>> faces){
         return true;
     }
     /*@Override

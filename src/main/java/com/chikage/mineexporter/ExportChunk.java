@@ -27,13 +27,12 @@ public class ExportChunk implements Runnable{
 
     @Override
     public void run() {
-        Main.logger.info("start import chunk at " + chunk.x +"," + chunk.z);
+//        Main.logger.info("start import chunk at " + chunk.x +"," + chunk.z);
 
         Range chunkRange = Range.toRangeFromChunk(chunk);
         Range range = chunkRange.intersect(expCtx.range);
 
-        Map<String, Set<float[][][]>> faces = new HashMap<>();
-        Set<Mtl> mtls = new HashSet<>();
+        Map<Texture, Set<float[][][]>> faces = new HashMap<>();
 
         for (BlockPos pos : range) {
             IBlockState state = chunk.getBlockState(pos).getActualState(chunk.getWorld(), pos);
@@ -53,20 +52,19 @@ public class ExportChunk implements Runnable{
             }
 
             if (exporter != null) {
-                exporter.export(faces, mtls);
+                exporter.export(faces);
             }
         }
 
 //        できる限りスレッドセーフなオブジェクトにはアクセスしないようチャンクごとにまとめて処理
-        for (Map.Entry<String, Set<float[][][]>> entry : faces.entrySet()) {
+        for (Map.Entry<Texture, Set<float[][][]>> entry : faces.entrySet()) {
             if (expCtx.faces.containsKey(entry.getKey())) {
                 expCtx.faces.get(entry.getKey()).addAll(entry.getValue());
             } else {
                 expCtx.faces.put(entry.getKey(), entry.getValue());
             }
         }
-        expCtx.mtls.addAll(mtls);
         expCtx.incProcessedBlocks(range.getSize());
-        Main.logger.info("finished import chunk at " + chunk.x +"," + chunk.z);
+//        Main.logger.info("finished import chunk at " + chunk.x +"," + chunk.z);
     }
 }

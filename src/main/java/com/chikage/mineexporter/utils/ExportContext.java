@@ -23,7 +23,7 @@ public class ExportContext {
 
     public final Range range;
 
-    public final Map<String, Set<float[][][]>> faces;
+    public final Map<Texture, Set<float[][][]>> faces;
     public final Set<Mtl> mtls;
 
     private long processedBlocks = 0;
@@ -37,7 +37,7 @@ public class ExportContext {
 
             Range range,
 
-            Map<String, Set<float[][][]>> faces,
+            Map<Texture, Set<float[][][]>> faces,
             Set<Mtl> mtls
             ) {
 
