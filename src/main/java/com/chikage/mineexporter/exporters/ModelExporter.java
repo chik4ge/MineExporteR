@@ -82,17 +82,21 @@ public class ModelExporter extends BlockExporter{
                     float u =    MathHandler.round(quad.getSprite().getUnInterpolatedU(Float.intBitsToFloat(vData[index + 4]))/16, textureWidth);
                     float v = 1F-MathHandler.round(quad.getSprite().getUnInterpolatedV(Float.intBitsToFloat(vData[index + 5]))/16, textureHeight);
 
-                    if (sprite.hasAnimationMetadata()) {
-                        int animationIndex = 0;
-                        int frameCount = sprite.getFrameCount();
-                        v = MathHandler.round(v * ((animationIndex%frameCount)+1)/frameCount, frameCount*textureHeight);
-                    }
+//                    if (sprite.hasAnimationMetadata()) {
+//                        int animationIndex = 0;
+//                        int frameCount = sprite.getFrameCount();
+//                        v = MathHandler.round(v * ((animationIndex%frameCount)+1)/frameCount, frameCount*textureHeight);
+//                    }
 
                     face[i][0][0] = x;
                     face[i][0][1] = y;
                     face[i][0][2] = z;
                     face[i][1][0] = u;
                     face[i][1][1] = v;
+                }
+
+                if (sprite.hasAnimationMetadata()) {
+                    tex.setFrameCount(sprite.getFrameCount());
                 }
 
 //                過去に追加したFaceと座標が重複した場合法線方向に少しずらす

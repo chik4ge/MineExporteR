@@ -24,7 +24,6 @@ public class ExportContext {
     public final Range range;
 
     public final Map<Texture, Set<float[][][]>> faces;
-    public final Set<Mtl> mtls;
 
     private long processedBlocks = 0;
 
@@ -37,8 +36,7 @@ public class ExportContext {
 
             Range range,
 
-            Map<Texture, Set<float[][][]>> faces,
-            Set<Mtl> mtls
+            Map<Texture, Set<float[][][]>> faces
             ) {
 
         this.rm = rm;
@@ -54,7 +52,6 @@ public class ExportContext {
         this.range = range;
 
         this.faces = faces;
-        this.mtls = mtls;
     }
 
     public synchronized void incProcessedBlocks(long amount) {
