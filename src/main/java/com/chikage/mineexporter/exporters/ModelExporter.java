@@ -1,5 +1,6 @@
 package com.chikage.mineexporter.exporters;
 
+import com.chikage.mineexporter.Main;
 import com.chikage.mineexporter.ctm.CTMContext;
 import com.chikage.mineexporter.ctm.method.CTMMethod;
 import com.chikage.mineexporter.utils.ExportContext;
@@ -46,61 +47,14 @@ public class ModelExporter extends BlockExporter{
                 String mtlName = sprite.getIconName();
 
                 ResourceLocation location = new ResourceLocation(mtlName);
-                ResourceLocation realLocation = new ResourceLocation(location.getNamespace(), "textures/"+ location.getPath()+".png");
 
-                Texture tex;
-                CTMContext ctmCtx = new CTMContext(expCtx.worldIn, quad, pos);
-                CTMMethod method = expCtx.ctmHandler.getMethod(ctmCtx, realLocation);
-                if (method != null) {
-                    int ctmIndex = method.getTileIndex(ctmCtx);
-                    tex = new Texture(location, method.propertyName);
-                    tex.setCTMIndex(ctmIndex);
-                } else {
-                    tex = new Texture(location);
-                }
+                //CTM情報が入ったTextureを取得
+                Texture tex = getTexture(location, quad);
 
                 if (quad.hasTintIndex()) {
                     int tintRGB = getMinecraft().getBlockColors().colorMultiplier(state, expCtx.worldIn, pos, quad.getTintIndex());
                     tex.setTintColor(tintRGB);
                 }
-
-//                List<String> texIds = faces.keySet().stream().map(Texture::getId).collect(Collectors.toList());
-//                if (!faces.containsKey(tex)) {
-//                    /*try {
-//                        texture = texHandler.getBaseTextureImage(expCtx.rm);
-//                    } catch (IOException e) {
-////                        noError = false;
-//                        Main.logger.error("failed to find texture image. block: " + state.getBlock().getRegistryName().toString());
-//                        e.printStackTrace();
-//                        continue;
-//                    }
-//                    if (texture == null) continue;
-//
-//                    try {
-//                        if (!ctmName.equals("none")) texHandler.setConnectedImage(expCtx.rm, texture, expCtx.ctmHandler);
-//                    } catch (IOException | ArrayIndexOutOfBoundsException e) {
-////                        noError = false;
-//                        Main.logger.error("failed to find ctm image. block: " + state.getBlock().getRegistryName().toString());
-//                        e.printStackTrace();
-//                    }
-//
-//                    if (tintRGB != -1) {
-//                        texHandler.setColormapToImage(texture, tintRGB);
-//                    }
-//
-//                    String texLocation = "textures/" + texName + ".png";
-//                    try {
-//                        texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
-//                    } catch (IOException e) {
-////                        noError = false;
-//                        Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
-//                        e.printStackTrace();
-//                    }*/
-//
-//                    Mtl mtl = Mtls.create(mtlName);
-//                    mtl.setMapKd(texDir);
-//                    mtls.add(mtl);
-//                }
 
                 int textureWidth = sprite.getIconWidth();
                 int textureHeight = sprite.getIconHeight();
@@ -134,11 +88,6 @@ public class ModelExporter extends BlockExporter{
                         v = MathHandler.round(v * ((animationIndex%frameCount)+1)/frameCount, frameCount*textureHeight);
                     }
 
-//                                int nv = vData[index + 6];
-//                                float nx = (byte) ((nv) & 0xFF) / 127.0F;
-//                                float ny = (byte) ((nv >> 8) & 0xFF) / 127.0F;
-//                                float nz = (byte) ((nv >> 16) & 0xFF) / 127.0F;
-
                     face[i][0][0] = x;
                     face[i][0][1] = y;
                     face[i][0][2] = z;
@@ -171,5 +120,18 @@ public class ModelExporter extends BlockExporter{
         }
 
         return true;
+    }
+
+    private Texture getTexture(ResourceLocation location, BakedQuad quad) {
+        ResourceLocation realLocation = new ResourceLocation(location.getNamespace(), "textures/"+ location.getPath()+".png");
+
+        CTMContext ctmCtx = new CTMContext(expCtx.worldIn, quad, pos);
+        CTMMethod method = expCtx.ctmHandler.getMethod(ctmCtx, realLocation);
+
+        if (method != null) {
+            return expCtx.ctmHandler.getCTMTexture(location, ctmCtx, method);
+        } else {
+            return new Texture(location);
+        }
     }
 }
