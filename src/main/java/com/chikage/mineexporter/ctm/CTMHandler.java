@@ -3,6 +3,7 @@ package com.chikage.mineexporter.ctm;
 import com.chikage.mineexporter.Main;
 import com.chikage.mineexporter.TextureHandler;
 import com.chikage.mineexporter.ctm.method.*;
+import com.chikage.mineexporter.utils.Texture;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.resources.IResourceManager;
@@ -34,8 +35,8 @@ public class CTMHandler {
 
 //    Map<String, CTMMethod> locationCache = new HashMap<>();
 //    ArrayList<CTMMethod> methods = new ArrayList<>();
-    private Map<ResourceLocation, Set<CTMMethod>> tileMatches = new ConcurrentHashMap<>();
-    private Map<Block, Set<CTMMethod>> blockMatches = new ConcurrentHashMap<>();
+    private Map<ResourceLocation, CTMMethod> tileMatches = new ConcurrentHashMap<>();
+    private Map<Block, CTMMethod> blockMatches = new ConcurrentHashMap<>();
     private Map<String, CTMMethod> propertyForNames = new ConcurrentHashMap<>();
 
     String ctmDir = "assets/minecraft/mcpatcher/ctm/";
@@ -95,17 +96,7 @@ public class CTMHandler {
 
         if (method.matchTiles != null) {
             for (String tileName: method.matchTiles) {
-                ResourceLocation rawLocation = new ResourceLocation(tileName);
-                putIfAbsent(tileMatches, rawLocation, method);
-
-                String pathIn;
-                if (tileName.endsWith(".png")){
-                    pathIn = "textures/blocks/"+ rawLocation.getPath();
-                } else {
-                    pathIn = "textures/blocks/"+ rawLocation.getPath()+".png";
-                }
-                ResourceLocation location = new ResourceLocation(rawLocation.getNamespace(), pathIn);
-                putIfAbsent(tileMatches, location, method);
+                updateMatchMap(tileMatches, getMatchTileLocation(method, tileName), method);
             }
         }
 
@@ -119,17 +110,16 @@ public class CTMHandler {
                     blockName = stateName;
                 }
                 Block matchBlock = Block.getBlockFromName(blockName);
-                putIfAbsent(blockMatches, matchBlock, method);
+                updateMatchMap(blockMatches, matchBlock, method);
             }
         }
     }
 
-    private <K, V> void putIfAbsent(Map<K, Set<V>> ma, K key, V me) {
-        if (ma.containsKey(key)) {
-            ma.get(key).add(me);
-        } else {
-            ma.put(key, new HashSet<V>(Arrays.asList(me)));
+    private <K> void updateMatchMap(Map<K, CTMMethod> ma, K key, CTMMethod me) {
+        if (ma.containsKey(key) && ma.get(key).propertyName.compareTo(me.propertyName) < 0) {
+            return;
         }
+        ma.put(key, me);
     }
 
     private CTMMethod createCTMProperty(InputStream stream, String path, String propertyName) throws IOException {
@@ -315,29 +305,39 @@ public class CTMHandler {
         return ArrayUtils.toPrimitive(result.toArray(new Integer[result.size()]));
     }
 
+    public ResourceLocation getMatchTileLocation(CTMMethod method, String tileName) {
+        if (tileName.startsWith("./")) {
+            return new ResourceLocation(String.join("/", method.directoryPath, tileName));
+        } else {
+            ResourceLocation r = new ResourceLocation(tileName+".png");
+            return new ResourceLocation(r.getNamespace(), "textures/blocks/"+r.getPath());
+        }
+    }
+
+    private ResourceLocation fullPathToResourceLocation(String fullPath) {
+        if (fullPath.startsWith("assets/")) {
+            String[] paths = fullPath.split("/");
+            return new ResourceLocation(paths[1], String.join("/", Arrays.copyOfRange(paths, 2, paths.length)));
+        } else {
+            Main.logger.error("An error occurred while parsing the path. Path: " + fullPath);
+            return null;
+        }
+    }
+
+    public ResourceLocation getTileLocation(CTMMethod method, String tileName) {
+        if (tileName.contains("/")) { //full path
+            return fullPathToResourceLocation(tileName);
+        } else {
+            return new ResourceLocation(String.join("/", method.directoryPath, tileName)+".png");
+        }
+    }
+
     public BufferedImage getTileBufferedImage(IResourceManager rm, CTMMethod method, int index) throws ArrayIndexOutOfBoundsException, IOException {
-//        実際にファイルが存在していなくても、中間としての指定であれば存在できる
         if (index < 0 || index >= method.tiles.size()) throw new ArrayIndexOutOfBoundsException("index must be in 0 to " + (method.tiles.size()-1) + ": " + index);
-        String path = method.tiles.get(index);
-        BufferedImage result = null;
+        String tileName = method.tiles.get(index);
+        ResourceLocation location = getTileLocation(method, tileName);
 
-        try {
-            result = TextureHandler.fetchImageCopy(rm, new ResourceLocation("minecraft:" + method.directoryPath + "/" + path + ".png"));
-        } catch (IOException ignored) {
-        }
-
-//        full path
-        if(result == null) {
-            if (path.startsWith("assets/")) {
-                String[] paths = path.split("/");
-                ResourceLocation location = new ResourceLocation(paths[1], String.join("/", Arrays.copyOfRange(paths, 2, paths.length)) + ".png");
-                result = TextureHandler.fetchImageCopy(rm, location);
-            } else {
-                throw new IOException("An error occurred while parsing the path. Path: " + path);
-            }
-        }
-
-        return result;
+        return TextureHandler.fetchImageCopy(rm, location);
     }
 
     public CTMMethod getMethod(CTMContext ctx, ResourceLocation texLocation) {
@@ -346,38 +346,38 @@ public class CTMHandler {
         int metadata = state.getBlock().getMetaFromState(state);
 
         if (tileMatches.containsKey(texLocation)) {
-            CTMMethod result = null;
-            for(CTMMethod method: tileMatches.get(texLocation)) {
-                if (!method.isMatchMetaData(metadata)) continue;
-                if (!method.isMatchFace(face)) continue;
-                
-                if(result == null) result = method;
-                else if (result.propertyName.compareTo(method.propertyName) > 0) {
-                    result = method;
-                }
+            CTMMethod method = tileMatches.get(texLocation);
+            if (method.isMatchMetaData(metadata) && method.isMatchFace(face)) {
+                return method;
             }
-            if (result != null) return result;
         }
 
         if (blockMatches.containsKey(state.getBlock())) {
-            CTMMethod result = null;
-            for(CTMMethod method: blockMatches.get(state.getBlock())) {
-                if (!method.isMatchMetaData(metadata)) continue;
-                if (!method.isMatchFace(face)) continue;
-                if (!method.isMatchBlock(state)) continue;
-
-                if(result == null) result = method;
-                else if (result.propertyName.compareTo(method.propertyName) > 0) {
-                    result = method;
-                }
+            CTMMethod method = blockMatches.get(state.getBlock());
+            if (method.isMatchMetaData(metadata) && method.isMatchFace(face) && method.isMatchBlock(state)) {
+                return method;
             }
-            return result;
         }
         return null;
     }
 
     public CTMMethod getMethod(String methodName) {
         return propertyForNames.get(methodName);
+    }
+
+    public Texture getCTMTexture(ResourceLocation location, CTMContext ctx, CTMMethod method) {
+        int index = method.getTileIndex(ctx);
+        Texture tex = new Texture(location,method.propertyName, index);
+
+        if (method instanceof MethodCTMCompact) return tex;
+
+        ResourceLocation ctmLocation = getTileLocation(method, method.tiles.get(index));
+        CTMMethod newMethod = tileMatches.get(ctmLocation);
+        if (newMethod != null) {
+            return getCTMTexture(location, ctx, newMethod);
+        }
+
+        return tex;
     }
 
     public int[] getCompactTileIndices(int index) {

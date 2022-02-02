@@ -190,9 +190,6 @@ public class ExportThread implements Runnable {
         Map<String, Set<float[][][]>> result = new HashMap<>();
         Map<String, Set<Texture>> texturesForMtl = new HashMap<>();
 
-//        Textureのidが重複する要素を集め、それをまとめて一つのテクスチャにする(できればソートしたい)
-//        その際UVも修正する必要があるのでやる
-
         for (Texture texture : faces.keySet()) {
             texturesForMtl.putIfAbsent(texture.getId(), new HashSet<>(Arrays.asList(texture)));
 
@@ -205,8 +202,10 @@ public class ExportThread implements Runnable {
             Set<Texture> textures = e.getValue();
 
             List<Texture> sortedTextures = textures.stream()
-                    .sorted(Comparator.comparing(Texture::getCTMIndex)
-                    .thenComparing(Texture::getTintLuminance))
+                    .sorted(
+                            Comparator.comparing(Texture::getCTMName)
+                                    .thenComparing(Texture::getCTMIndex)
+                                    .thenComparing(Texture::getTintLuminance))
                     .collect(Collectors.toList());
 
             Set<float[][][]> facesForMtl = new HashSet<>();

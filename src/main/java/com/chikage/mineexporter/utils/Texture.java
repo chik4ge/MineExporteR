@@ -11,19 +11,16 @@ public class Texture {
     private int CTMIndex = -1;
     private int tintColor = -1;
 
-    public Texture(ResourceLocation baseTexLocation, String ctmName) {
+    public Texture(ResourceLocation baseTexLocation, String ctmName, int index) {
         this.baseTexLocation = baseTexLocation;
         this.ctmName = ctmName;
         this.textureType = TextureType.CTM;
+        this.CTMIndex = index;
     }
 
     public Texture(ResourceLocation baseTexLocation) {
         this.baseTexLocation = baseTexLocation;
         this.textureType = TextureType.NORMAL;
-    }
-
-    public void setCTMIndex(int index) {
-        this.CTMIndex = index;
     }
 
     public void setTintColor(int tint) {
@@ -43,6 +40,10 @@ public class Texture {
 
     public TextureType getTextureType() {
         return textureType;
+    }
+
+    public String getCTMName() {
+        return ctmName;
     }
 
     public int getCTMIndex() {

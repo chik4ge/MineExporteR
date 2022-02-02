@@ -85,6 +85,7 @@ public class RenderHandler {
         tessellator.draw();
         GL11.glDepthMask(true);
         GL11.glPopAttrib();
+        GL11.glTranslated(cameraPos.x, cameraPos.y, cameraPos.z);
     }
 
     private static void drawBoundingBox(BufferBuilder bufferBuilder, double mx, double my, double mz, double Mx, double My, double Mz, Color c, float width) {
