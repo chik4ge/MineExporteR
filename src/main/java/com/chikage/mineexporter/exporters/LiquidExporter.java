@@ -1,16 +1,22 @@
 package com.chikage.mineexporter.exporters;
 
+import com.chikage.mineexporter.TextureHandler;
 import com.chikage.mineexporter.utils.ExportContext;
 import com.chikage.mineexporter.utils.Texture;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.IBlockAccess;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import static net.minecraft.client.Minecraft.getMinecraft;
 
@@ -34,11 +40,6 @@ public class LiquidExporter extends BlockExporter{
     }
     @Override
     public boolean export(Map<Texture, Set<float[][][]>> faces){
-        return true;
-    }
-    /*@Override
-    public boolean export(Set<Vertex> verticesIn, Set<UV> uvsIn, Map<String, Set<Face>> facesIn, Set<Mtl> mtlsIn) {
-        TextureHandler texHandler;
 
 //                    BlockFluidRenderほぼそのまま実装
 //                    BlockLiquid blockliquid = (BlockLiquid)state.getBlock();
@@ -72,35 +73,6 @@ public class LiquidExporter extends BlockExporter{
             if (renderUP) {
                 float slopeAngle = BlockLiquid.getSlopeAngle(expCtx.worldIn, pos, material, state);
                 TextureAtlasSprite textureatlassprite = slopeAngle > -999.0F ? atextureatlassprite[1] : atextureatlassprite[0];
-                texHandler = new TextureHandler(textureatlassprite);
-                String texName = texHandler.getTextureName();
-                if (!mtlsIn.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
-                    BufferedImage texture;
-                    try {
-                        texture = texHandler.getBaseTextureImage(expCtx.rm);
-                    } catch (IOException e) {
-//                        noError = false;
-                        Main.logger.error("failed to find texture image. block: " + state.getBlock().getRegistryName().toString());
-                        e.printStackTrace();
-                        return false;
-//                        continue;
-                    }
-                    if (texture == null) return false;
-
-                    String texLocation = "textures/" + texName + ".png";
-                    try {
-                        texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
-                    } catch (IOException e) {
-//                        noError = false;
-                        Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
-                        e.printStackTrace();
-                        return false;
-                    }
-
-                    Mtl mtl = Mtls.create(texName);
-                    mtl.setMapKd(texLocation);
-                    mtlsIn.add(mtl);
-                }
 
                 NWy -= 0.001F;
                 SWy -= 0.001F;
@@ -115,103 +87,89 @@ public class LiquidExporter extends BlockExporter{
                 float SEv;
                 float NEv;
                 if (slopeAngle < -999.0F) {
-                    NWu = textureatlassprite.getInterpolatedU(0.0D);
-                    NWv = textureatlassprite.getInterpolatedV(0.0D);
+                    NWu = 0.0f;
+                    NWv = 0.0f;
                     SWu = NWu;
-                    SWv = textureatlassprite.getInterpolatedV(16.0D);
-                    SEu = textureatlassprite.getInterpolatedU(16.0D);
+                    SWv = 1.0f;
+                    SEu = 1.0f;
                     SEv = SWv;
                     NEu = SEu;
                     NEv = NWv;
                 } else {
                     float f21 = MathHelper.sin(slopeAngle) * 0.25F;
                     float f22 = MathHelper.cos(slopeAngle) * 0.25F;
-                    NWu = textureatlassprite.getInterpolatedU(8.0F + (-f22 - f21) * 16.0F);
-                    NWv = textureatlassprite.getInterpolatedV(8.0F + (-f22 + f21) * 16.0F);
-                    SWu = textureatlassprite.getInterpolatedU(8.0F + (-f22 + f21) * 16.0F);
-                    SWv = textureatlassprite.getInterpolatedV(8.0F + (f22 + f21) * 16.0F);
-                    SEu = textureatlassprite.getInterpolatedU(8.0F + (f22 + f21) * 16.0F);
-                    SEv = textureatlassprite.getInterpolatedV(8.0F + (f22 - f21) * 16.0F);
-                    NEu = textureatlassprite.getInterpolatedU(8.0F + (f22 - f21) * 16.0F);
-                    NEv = textureatlassprite.getInterpolatedV(8.0F + (-f22 - f21) * 16.0F);
+                    NWu = 0.5F + (-f22 - f21);
+                    NWv = 0.5F + (-f22 + f21);
+                    SWu = 0.5F + (-f22 + f21);
+                    SWv = 0.5F + (f22 + f21);
+                    SEu = 0.5F + (f22 + f21);
+                    SEv = 0.5F + (f22 - f21);
+                    NEu = 0.5F + (f22 - f21);
+                    NEv = 0.5F + (-f22 - f21);
                 }
 
-                Vertex v1 = new Vertex(offset[0], offset[1] + NWy, offset[2]);
-                Vertex v2 = new Vertex(offset[0], offset[1] + SWy, offset[2] + 1F);
-                Vertex v3 = new Vertex(offset[0] + 1F, offset[1] + SEy, offset[2] + 1F);
-                Vertex v4 = new Vertex(offset[0] + 1F, offset[1] + NEy, offset[2]);
-                UV uv1 = new UV(NWu, NWv);
-                UV uv2 = new UV(SWu, SWv);
-                UV uv3 = new UV(SEu, SEv);
-                UV uv4 = new UV(NEu, NEv);
-                Vertex[] vertices = {v1, v2, v3, v4};
-                UV[] uvs = {uv1, uv2, uv3, uv4};
+                Texture tex = getTexture(textureatlassprite);
+                if (textureatlassprite.hasAnimationMetadata()) {
+                    tex.setFrameCount(textureatlassprite.getFrameCount());
+                }
 
-                Collections.addAll(verticesIn, vertices);
-                Collections.addAll(uvsIn, uvs);
+                float[][][] face = new float[][][]{
+                        {
+                            {offset[0], offset[1] + NWy, offset[2]},
+                            {NWu, NWv, 0}
+                        },
+                        {
+                            {offset[0], offset[1] + SWy, offset[2] + 1F},
+                            {SWu, SWv, 0}
+                        },
+                        {
+                            {offset[0] + 1F, offset[1] + SEy, offset[2] + 1F},
+                            {SEu, SEv, 0}
+                        },
+                        {
+                            {offset[0] + 1F, offset[1] + NEy, offset[2]},
+                            {NEu, NEv, 0}
+                        }
+                };
 
-                Face face = new Face(vertices, uvs);
-                if (facesIn.containsKey(texName)) {
-                    facesIn.get(texName).add(face);
+                if (faces.containsKey(tex)) {
+                    faces.get(tex).add(face);
                 } else {
-                    facesIn.put(texName, new HashSet<>(Arrays.asList(face)));
+                    faces.put(tex, new CopyOnWriteArraySet<>(Collections.singletonList(face)));
                 }
             }
 
             if (renderDOWN) {
-                texHandler = new TextureHandler(atextureatlassprite[0]);
-                String texName = texHandler.getTextureName();
-                if (!mtlsIn.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
-                    BufferedImage texture;
-                    try {
-                        texture = texHandler.getBaseTextureImage(expCtx.rm);
-                    } catch (IOException e) {
-//                        noError = false;
-                        Main.logger.error("failed to find texture image. block: " + state.getBlock().getRegistryName().toString());
-                        e.printStackTrace();
-                        return false;
-                    }
-                    if (texture == null) return false;
+                TextureAtlasSprite textureatlassprite = atextureatlassprite[0];
 
-                    String texLocation = "textures/" + texName + ".png";
-                    try {
-                        texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
-                    } catch (IOException e) {
-//                        noError = false;
-                        Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
-                        e.printStackTrace();
-                        return false;
-                    }
-
-                    Mtl mtl = Mtls.create(texName);
-                    mtl.setMapKd(texLocation);
-                    mtlsIn.add(mtl);
+                Texture tex = getTexture(textureatlassprite);
+                if (textureatlassprite.hasAnimationMetadata()) {
+                    tex.setFrameCount(textureatlassprite.getFrameCount());
                 }
 
-                float minU = atextureatlassprite[0].getMinU();
-                float maxU = atextureatlassprite[0].getMaxU();
-                float minV = atextureatlassprite[0].getMinV();
-                float maxV = atextureatlassprite[0].getMaxV();
+                float[][][] face = new float[][][]{
+                        {
+                                {offset[0], offset[1], offset[2] + 1F},
+                                {0.0f, 1.0f, 0}
+                        },
+                        {
+                                {offset[0], offset[1], offset[2]},
+                                {0.0f, 0.0f, 0}
+                        },
+                        {
+                                {offset[0] + 1F, offset[1], offset[2]},
+                                {1.0f, 0.0f, 0}
+                        },
+                        {
+                                {offset[0] + 1F, offset[1], offset[2] + 1F},
+                                {1.0f, 1.0f, 0}
+                        }
+                };
 
-                Vertex v1 = new Vertex(offset[0], offset[1], offset[2] + 1F);
-                Vertex v2 = new Vertex(offset[0], offset[1], offset[2]);
-                Vertex v3 = new Vertex(offset[0] + 1F, offset[1], offset[2]);
-                Vertex v4 = new Vertex(offset[0] + 1F, offset[1], offset[2] + 1F);
-                UV uv1 = new UV(minU, maxV);
-                UV uv2 = new UV(minU, minV);
-                UV uv3 = new UV(maxU, minV);
-                UV uv4 = new UV(maxU, maxV);
-                Vertex[] vertices = {v1, v2, v3, v4};
-                UV[] uvs = {uv1, uv2, uv3, uv4};
-
-                Collections.addAll(verticesIn, vertices);
-                Collections.addAll(uvsIn, uvs);
-
-                Face face = new Face(vertices, uvs);
-                if (facesIn.containsKey(texName)) {
-                    facesIn.get(texName).add(face);
+                if (faces.containsKey(tex)) {
+                    faces.get(tex).add(face);
                 } else {
-                    facesIn.put(texName, new HashSet<>(Arrays.asList(face)));
+                    faces.put(tex, new CopyOnWriteArraySet<>(Collections.singletonList(face)));
                 }
             }
 
@@ -251,35 +209,6 @@ public class LiquidExporter extends BlockExporter{
                     {
                         textureatlassprite1 = atlasSpriteWaterOverlay;
                     }
-                }
-
-                texHandler = new TextureHandler(textureatlassprite1);
-                String texName = texHandler.getTextureName();
-                if (!mtlsIn.stream().map(Mtl::getName).collect(Collectors.toList()).contains(texName)) {
-                    BufferedImage texture;
-                    try {
-                        texture = texHandler.getBaseTextureImage(expCtx.rm);
-                    } catch (IOException e) {
-//                        noError = false;
-                        Main.logger.error("failed to find texture image. block: " + state.getBlock().getRegistryName().toString());
-                        e.printStackTrace();
-                        return false;
-                    }
-                    if (texture == null) return false;
-
-                    String texLocation = "textures/" + texName + ".png";
-                    try {
-                        texHandler.save(texture, Paths.get("MineExporteR/" + texLocation));
-                    } catch (IOException e) {
-//                        noError = false;
-                        Main.logger.error(TextFormatting.RED + "failed to save texture image: " + texLocation);
-                        e.printStackTrace();
-                        return false;
-                    }
-
-                    Mtl mtl = Mtls.create(texName);
-                    mtl.setMapKd(texLocation);
-                    mtlsIn.add(mtl);
                 }
 
                 if (renderSIDEs[i1])
@@ -328,41 +257,54 @@ public class LiquidExporter extends BlockExporter{
                         d6 = offset[2] + 1.0D;
                     }
 
-                    float f41 = textureatlassprite1.getInterpolatedU(0.0D);
-                    float f27 = textureatlassprite1.getInterpolatedU(8.0D);
-                    float f28 = textureatlassprite1.getInterpolatedV((1.0F - f39) * 16.0F * 0.5F);
-                    float f29 = textureatlassprite1.getInterpolatedV((1.0F - f40) * 16.0F * 0.5F);
-                    float f30 = textureatlassprite1.getInterpolatedV(8.0D);
+                    float f41 = 0.0f;
+                    float f27 = 0.5f;
+                    float f28 = (1.0f - f39) * 0.5f;
+                    float f29 = (1.0f - f40) * 0.5f;
+                    float f30 = 0.5f;
 //                                int j = state.getPackedLightmapCoords(access, blockpos);
 //                                int k = j >> 16 & 65535;
 //                                int l = j & 65535;
 //                                float f31 = i1 < 2 ? 0.8F : 0.6F;
+                    Texture tex = getTexture(textureatlassprite1);
+                    if (textureatlassprite1.hasAnimationMetadata()) {
+                        tex.setFrameCount(textureatlassprite1.getFrameCount());
+                    }
 
-                    Vertex v1 = new Vertex((float) d3, offset[1] + f39, (float) d4);
-                    Vertex v2 = new Vertex((float) d5, offset[1] + f40, (float) d6);
-                    Vertex v3 = new Vertex((float) d5, offset[1], (float) d6);
-                    Vertex v4 = new Vertex((float) d3, offset[1], (float) d4);
-                    UV uv1 = new UV(f41, f28);
-                    UV uv2 = new UV(f27, f29);
-                    UV uv3 = new UV(f27, f30);
-                    UV uv4 = new UV(f41, f30);
-                    Vertex[] vertices = {v1, v2, v3, v4};
-                    UV[] uvs = {uv1, uv2, uv3, uv4};
+                    float[][][] face = new float[][][]{
+                            {
+                                    {(float) d3, offset[1] + f39, (float) d4},
+                                    {f41, f28, 0}
+                            },
+                            {
+                                    {(float) d5, offset[1] + f40, (float) d6},
+                                    {f27, f29, 0}
+                            },
+                            {
+                                    {(float) d5, offset[1], (float) d6},
+                                    {f27, f30, 0}
+                            },
+                            {
+                                    {(float) d3, offset[1], (float) d4},
+                                    {f41, f30, 0}
+                            }
+                    };
 
-                    Collections.addAll(verticesIn, vertices);
-                    Collections.addAll(uvsIn, uvs);
-
-                    Face face = new Face(vertices, uvs);
-                    if (facesIn.containsKey(texName)) {
-                        facesIn.get(texName).add(face);
+                    if (faces.containsKey(tex)) {
+                        faces.get(tex).add(face);
                     } else {
-                        facesIn.put(texName, new HashSet<>(Arrays.asList(face)));
+                        faces.put(tex, new CopyOnWriteArraySet<>(Collections.singletonList(face)));
                     }
                 }
             }
         }
         return true;
-    }*/
+    }
+
+    private Texture getTexture(TextureAtlasSprite sprite) {
+        String iconName = sprite.getIconName();
+        return new Texture(new ResourceLocation(iconName));
+    }
 
     private float getFluidHeight(IBlockAccess blockAccess, BlockPos blockPosIn, Material blockMaterial) {
         int i = 0;

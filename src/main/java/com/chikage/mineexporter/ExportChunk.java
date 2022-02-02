@@ -45,7 +45,7 @@ public class ExportChunk implements Runnable{
                     exporter = new ModelExporter(expCtx, state, pos);
                     break;
                 case LIQUID:
-//                    exporter = new LiquidExporter(expCtx, state, pos);
+                    exporter = new LiquidExporter(expCtx, state, pos);
                     break;
                 case ENTITYBLOCK_ANIMATED: break;
                 default: continue;

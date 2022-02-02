@@ -6,10 +6,11 @@ import java.util.Objects;
 
 public class Texture {
     private ResourceLocation baseTexLocation;
-    private String ctmName;
+    private String ctmName = "";
     private final TextureType textureType;
     private int CTMIndex = -1;
     private int tintColor = -1;
+    private int frameCount = -1;
 
     public Texture(ResourceLocation baseTexLocation, String ctmName, int index) {
         this.baseTexLocation = baseTexLocation;
@@ -40,6 +41,14 @@ public class Texture {
 
     public TextureType getTextureType() {
         return textureType;
+    }
+
+    public void setFrameCount(int frameCount) {
+        this.frameCount = frameCount;
+    }
+
+    public int getFrameCount() {
+        return frameCount;
     }
 
     public String getCTMName() {

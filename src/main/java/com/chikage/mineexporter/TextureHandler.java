@@ -4,6 +4,8 @@ import com.chikage.mineexporter.ctm.CTMContext;
 import com.chikage.mineexporter.ctm.CTMHandler;
 import com.chikage.mineexporter.ctm.method.CTMMethod;
 import com.chikage.mineexporter.ctm.method.MethodCTMCompact;
+import com.chikage.mineexporter.utils.Texture;
+import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;

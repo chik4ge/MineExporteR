@@ -95,8 +95,7 @@ public class ExportThread implements Runnable {
 
                     range,
 
-                    faces,
-                    mtls
+                    faces
                     );
 
             IChunkProvider provider = ((World)expCtx.worldIn).getChunkProvider();
@@ -264,6 +263,13 @@ public class ExportThread implements Runnable {
                     for (int j = 0; j < 4; j++) {
                         float u = rawFace[j][1][0];
                         float v = rawFace[j][1][1];
+
+                        int frameCount=texture.getFrameCount();
+                        int animationIndex = 0;
+                        if (frameCount != -1) {
+                            v = MathHandler.round(v * ((animationIndex%frameCount)+1)/frameCount, texHeight);
+                        }
+
 //                        texwidth = 16 ; u = 1.0 ; mergedWidth = 48 ; row = 0 -> 0.5
 //                        texHeight = 16, v = 1.0, mergedWidrh = 16, column = 0 -> 1.0
                         rawFace[j][1][0] = MathHandler.round((u + row) * texWidth  / mergedWidth , mergedWidth);
