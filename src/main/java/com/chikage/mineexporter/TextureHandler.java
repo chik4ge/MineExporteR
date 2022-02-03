@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,7 @@ public class TextureHandler {
             images[2] = handler.getTileBufferedImage(rm, method, 2);
             images[3] = handler.getTileBufferedImage(rm, method, 3);
             images[4] = handler.getTileBufferedImage(rm, method, 4);
+            if (Arrays.asList(images).contains(null)) return;
 
             int[] indices = handler.getCompactTileIndices(index);
 
@@ -51,6 +53,7 @@ public class TextureHandler {
 
         } else {
             BufferedImage newImage = handler.getTileBufferedImage(rm, method, index);
+            if (newImage == null) return;
 
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {

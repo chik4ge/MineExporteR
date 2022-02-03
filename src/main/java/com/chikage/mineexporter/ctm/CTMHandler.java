@@ -317,7 +317,7 @@ public class CTMHandler {
     private ResourceLocation fullPathToResourceLocation(String fullPath) {
         if (fullPath.startsWith("assets/")) {
             String[] paths = fullPath.split("/");
-            return new ResourceLocation(paths[1], String.join("/", Arrays.copyOfRange(paths, 2, paths.length)));
+            return new ResourceLocation(paths[1], String.join("/", Arrays.copyOfRange(paths, 2, paths.length))+".png");
         } else {
             Main.logger.error("An error occurred while parsing the path. Path: " + fullPath);
             return null;
@@ -367,14 +367,17 @@ public class CTMHandler {
 
     public Texture getCTMTexture(ResourceLocation location, CTMContext ctx, CTMMethod method) {
         int index = method.getTileIndex(ctx);
-        Texture tex = new Texture(location,method.propertyName, index);
+        Texture tex = new Texture(location, method.propertyName, index);
 
         if (method instanceof MethodCTMCompact) return tex;
 
-        ResourceLocation ctmLocation = getTileLocation(method, method.tiles.get(index));
-        CTMMethod newMethod = tileMatches.get(ctmLocation);
-        if (newMethod != null) {
-            return getCTMTexture(location, ctx, newMethod);
+        String tileName = method.tiles.get(index);
+        if (!tileName.contains("/")) { //if tileName is not fullPath
+            ResourceLocation ctmLocation = getTileLocation(method, tileName);
+            CTMMethod newMethod = tileMatches.get(ctmLocation);
+            if (newMethod != null) {
+                return getCTMTexture(location, ctx, newMethod);
+            }
         }
 
         return tex;
