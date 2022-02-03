@@ -39,7 +39,7 @@ public class Main {
 
     public static final String MOD_ID = "mineexporter";
     public static final String MOD_NAME = "MineExporteR";
-    public static final String VERSION = "0.1.0-alpha";
+    public static final String VERSION = "0.2.0-beta";
 
     public final CommandMexp mexpCommand = new CommandMexp();
 
