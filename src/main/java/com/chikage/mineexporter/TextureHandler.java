@@ -1,12 +1,8 @@
 package com.chikage.mineexporter;
 
-import com.chikage.mineexporter.ctm.CTMContext;
 import com.chikage.mineexporter.ctm.CTMHandler;
 import com.chikage.mineexporter.ctm.method.CTMMethod;
 import com.chikage.mineexporter.ctm.method.MethodCTMCompact;
-import com.chikage.mineexporter.utils.Texture;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
 
@@ -119,11 +115,10 @@ public class TextureHandler {
 
 //    quote from https://stackoverflow.com/questions/3514158/how-do-you-clone-a-bufferedimage
     public static BufferedImage copyImage(BufferedImage source){
-        if (source == null) return null;
-        ColorModel cm = source.getColorModel();
-        boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
-        WritableRaster raster = source.copyData(null);
-        return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
+        BufferedImage image = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        pasteImage(0, 0, source, image);
+
+        return image;
     }
 
     public static void pasteImage(int xIn, int yIn, BufferedImage fromImage, BufferedImage toImage) {

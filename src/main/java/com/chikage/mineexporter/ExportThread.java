@@ -79,8 +79,6 @@ public class ExportThread implements Runnable {
 //            delete texture file
             deleteFile(new File("MineExporteR/textures"));
 
-            Set<float[]> vertices = new CopyOnWriteArraySet<>();
-            Set<float[]> uvs = new CopyOnWriteArraySet<>();
             Map<Texture, Set<float[][][]>> faces = new ConcurrentHashMap<>();
 
             Obj obj = Objs.create();
