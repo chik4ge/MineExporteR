@@ -309,7 +309,8 @@ public class CTMHandler {
         if (tileName.startsWith("./")) {
             return new ResourceLocation(String.join("/", method.directoryPath, tileName));
         } else {
-            ResourceLocation r = new ResourceLocation(tileName+".png");
+            if (!tileName.endsWith(".png")) tileName += ".png";
+            ResourceLocation r = new ResourceLocation(tileName);
             return new ResourceLocation(r.getNamespace(), "textures/blocks/"+r.getPath());
         }
     }
