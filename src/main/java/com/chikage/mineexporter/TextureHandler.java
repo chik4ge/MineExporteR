@@ -5,6 +5,7 @@ import com.chikage.mineexporter.ctm.method.CTMMethod;
 import com.chikage.mineexporter.ctm.method.MethodCTMCompact;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
+import org.imgscalr.Scalr;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -51,6 +52,9 @@ public class TextureHandler {
             BufferedImage newImage = handler.getTileBufferedImage(rm, method, index);
             if (newImage == null) return;
 
+            if (newImage.getWidth() != image.getWidth() || newImage.getHeight() != image.getHeight()) {
+                newImage = Scalr.resize(newImage, Scalr.Method.QUALITY, Scalr.Mode.FIT_EXACT, image.getWidth(), image.getHeight());
+            }
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {
                     image.setRGB(x, y, newImage.getRGB(x, y));

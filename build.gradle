@@ -44,15 +44,18 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2855'
     compile 'de.javagl:obj:0.3.0'
+    compile 'org.imgscalr:imgscalr-lib:4.2'
 }
 
 shadowJar {
     dependencies {
         include(dependency('de.javagl:obj:.*'))
+        include(dependency('org.imgscalr:.*'))
     }
 
     // Relocate class to prevent conflicts with other mods that include it
     relocate 'de.javagl.obj', 'com.chikage.mineexporter.de.javagl.obj'
+    relocate 'org.imgscalr' , 'com.chikage.mineexporter.org.imgscalr'
 
     classifier '' // Replace the default JAR
 }
