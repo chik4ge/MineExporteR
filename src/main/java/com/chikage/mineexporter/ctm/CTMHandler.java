@@ -366,22 +366,26 @@ public class CTMHandler {
         return propertyForNames.get(methodName);
     }
 
-    public Texture getCTMTexture(ResourceLocation location, CTMContext ctx, CTMMethod method) {
+    public Texture getCTMTexture(ResourceLocation location, CTMContext ctx, CTMMethod method, boolean isNested) {
         int index = method.getTileIndex(ctx);
         Texture tex = new Texture(location, method.propertyName, index);
 
         if (method instanceof MethodCTMCompact) return tex;
 
         String tileName = method.tiles.get(index);
-        if (!tileName.contains("/")) { //if tileName is not fullPath
+        if (!tileName.contains("/") && !isNested) { //if tileName is not fullPath
             ResourceLocation ctmLocation = getTileLocation(method, tileName);
             CTMMethod newMethod = tileMatches.get(ctmLocation);
             if (newMethod != null) {
-                return getCTMTexture(location, ctx, newMethod);
+                return getCTMTexture(location, ctx, newMethod, true);
             }
         }
 
         return tex;
+    }
+
+    public Texture getCTMTexture(ResourceLocation location, CTMContext ctx, CTMMethod method) {
+        return getCTMTexture(location, ctx, method, false);
     }
 
     public int[] getCompactTileIndices(int index) {
