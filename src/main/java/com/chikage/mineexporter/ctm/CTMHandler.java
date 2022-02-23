@@ -307,7 +307,7 @@ public class CTMHandler {
 
     public ResourceLocation getMatchTileLocation(CTMMethod method, String tileName) {
         if (tileName.startsWith("./")) {
-            return new ResourceLocation(String.join("/", method.directoryPath, tileName));
+            return new ResourceLocation(String.join("/", method.directoryPath, tileName.substring(2)));
         } else {
             if (!tileName.endsWith(".png")) tileName += ".png";
             ResourceLocation r = new ResourceLocation(tileName);
