@@ -155,7 +155,12 @@ public class ExportThread implements Runnable {
                         }
                         uvIndices[i] = uvIdMap.get(uv);
                     }
-                    obj.addFace(vertexIndices, uvIndices, null);
+                    if (vertexIndices[2] == vertexIndices[3]) {
+                        obj.addFace(Arrays.copyOf(vertexIndices, 3), Arrays.copyOf(uvIndices, 3), null);
+                    } else {
+                        obj.addFace(vertexIndices, uvIndices, null);
+                    }
+
                 }
             }
 
@@ -265,13 +270,13 @@ public class ExportThread implements Runnable {
                         int frameCount=texture.getFrameCount();
                         int animationIndex = 0;
                         if (frameCount != -1) {
-                            v = MathHandler.round(v * ((animationIndex%frameCount)+1)/frameCount, texHeight);
+                            v = MathHandler.round(v * ((animationIndex%frameCount)+1)/frameCount, 1000000);
                         }
 
 //                        texwidth = 16 ; u = 1.0 ; mergedWidth = 48 ; row = 0 -> 0.5
 //                        texHeight = 16, v = 1.0, mergedWidrh = 16, column = 0 -> 1.0
-                        rawFace[j][1][0] = MathHandler.round((u + row) * texWidth  / mergedWidth , mergedWidth);
-                        rawFace[j][1][1] = MathHandler.round(((v-column-1) * texHeight + mergedHeight) / mergedHeight, mergedHeight);
+                        rawFace[j][1][0] = MathHandler.round((u + row) * texWidth  / mergedWidth , 1000000);
+                        rawFace[j][1][1] = MathHandler.round(((v-column-1) * texHeight + mergedHeight) / mergedHeight, 1000000);
                     }
                 }
 
