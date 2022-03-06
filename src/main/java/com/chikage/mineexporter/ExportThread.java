@@ -124,32 +124,36 @@ public class ExportThread implements Runnable {
             executor.shutdown();
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
-            Main.logger.info("finished chunk loading");
+            Main.logger.info("finished chunk processing");
 
 //            float配列だとHashCodeが想定通りに動作しないためFloatBufferを使用
-            HashMap<FloatBuffer, Integer> vertexIdMap = new HashMap<>();
+            HashMap<FloatArrayWrapper, Integer> vertexIdMap = new HashMap<>();
 
-            HashMap<FloatBuffer, Integer> uvIdMap = new HashMap<>();
+            HashMap<FloatArrayWrapper, Integer> uvIdMap = new HashMap<>();
             int vertexId = 0;
             int uvId = 0;
             Map<String, Set<float[][][]>> fixedFaces = mergeTextures(faces, mtls);
+            int n = fixedFaces.size();
+            int j = 0;
             for (Map.Entry<String, Set<float[][][]>> facesOfMtl : fixedFaces.entrySet()) {
+                j++;
+                Main.logger.info("processing material " + facesOfMtl.getKey() + ": " + j + "/" + n);
                 obj.setActiveMaterialGroupName(facesOfMtl.getKey());
                 for (float[][][] face : facesOfMtl.getValue()) {
                     int[] vertexIndices = new int[4];
                     int[] uvIndices = new int[4];
                     for (int i=0; i<4; i++) {
-                        FloatBuffer vertex = FloatBuffer.wrap(face[i][0]);
+                        FloatArrayWrapper vertex = new FloatArrayWrapper(face[i][0]);
                         if (!vertexIdMap.containsKey(vertex)) {
-                            obj.addVertex(vertex.get(0), vertex.get(1), vertex.get(2));
+                            obj.addVertex(face[i][0][0], face[i][0][1], face[i][0][2]);
                             vertexIdMap.put(vertex, vertexId);
                             vertexId++;
                         }
                         vertexIndices[i] = vertexIdMap.get(vertex);
 
-                        FloatBuffer uv = FloatBuffer.wrap(face[i][1]);
+                        FloatArrayWrapper uv = new FloatArrayWrapper(face[i][1]);
                         if (!uvIdMap.containsKey(uv)) {
-                            obj.addTexCoord(uv.get(0), uv.get(1));
+                            obj.addTexCoord(face[i][1][0], face[i][1][1]);
                             uvIdMap.put(uv, uvId);
                             uvId++;
                         }
@@ -160,9 +164,10 @@ public class ExportThread implements Runnable {
                     } else {
                         obj.addFace(vertexIndices, uvIndices, null);
                     }
-
                 }
             }
+
+            Main.logger.info("finished texture processing");
 
             File objFile = new File("MineExporteR/export.obj");
             File mtlFile = new File("MineExporteR/export.mtl");
@@ -181,6 +186,7 @@ public class ExportThread implements Runnable {
         } finally {
             isRunning = false;
             unExportedChunks = null;
+            exportingChunks = null;
         }
         sendSuccessMessage("successfully exported.");
 
@@ -227,7 +233,7 @@ public class ExportThread implements Runnable {
                 ResourceLocation baseLocation = texture.getBaseTexLocation();
                 ResourceLocation location = new ResourceLocation(baseLocation.getNamespace(), "textures/"+ baseLocation.getPath()+".png");
 
-                BufferedImage baseImage = null;
+                BufferedImage baseImage;
                 try {
                     baseImage = TextureHandler.fetchImageCopy(expCtx.rm, location);
                 } catch (IOException ioException) {
