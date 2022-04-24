@@ -36,23 +36,29 @@ public class ExportChunk implements Runnable{
 
         for (BlockPos pos : range) {
             IBlockState state = chunk.getBlockState(pos).getActualState(chunk.getWorld(), pos);
-            if (state.toString().equals("minecraft:air")) continue;
+            try {
+                if (state.toString().equals("minecraft:air")) continue;
 
-            BlockExporter exporter = null;
+                BlockExporter exporter = null;
 
-            switch (state.getRenderType()) {
-                case MODEL:
-                    exporter = new ModelExporter(expCtx, state, pos);
-                    break;
-                case LIQUID:
-                    exporter = new LiquidExporter(expCtx, state, pos);
-                    break;
-                case ENTITYBLOCK_ANIMATED: break;
-                default: continue;
-            }
+                switch (state.getRenderType()) {
+                    case MODEL:
+                        exporter = new ModelExporter(expCtx, state, pos);
+                        break;
+                    case LIQUID:
+                        exporter = new LiquidExporter(expCtx, state, pos);
+                        break;
+                    case ENTITYBLOCK_ANIMATED:
+                        break;
+                    default:
+                        continue;
+                }
 
-            if (exporter != null) {
-                exporter.export(faces);
+                if (exporter != null) {
+                    exporter.export(faces);
+                }
+            } catch (Throwable e) {
+                ChatHandler.sendErrorMessage("Error processing block "+ state + " at " + pos + ". this block will be ignored.");
             }
         }
 

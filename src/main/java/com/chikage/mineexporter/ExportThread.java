@@ -2,18 +2,14 @@ package com.chikage.mineexporter;
 
 import com.chikage.mineexporter.utils.*;
 import de.javagl.obj.*;
-import net.minecraft.command.ICommandSender;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.nio.FloatBuffer;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
@@ -25,7 +21,6 @@ public class ExportThread implements Runnable {
     private BlockPos pos1;
     private BlockPos pos2;
     private World world;
-    private ICommandSender commandSender;
     private Set<int[]> exportingChunks;
     private Set<int[]> unExportedChunks;
     private boolean isRunning = false;
@@ -33,10 +28,6 @@ public class ExportThread implements Runnable {
     private ExportContext expCtx;
 
 //    private final boolean isCTMSupport = true;
-
-    public void setCommandSender(ICommandSender sender) {
-        this.commandSender = sender;
-    }
 
     public void setWorld(World world) {
         this.world = world;
@@ -62,11 +53,11 @@ public class ExportThread implements Runnable {
         long startTime = System.currentTimeMillis();
         try {
             if (!isPosSet()) {
-                sendErrorMessage("set pos1 and pos2 first.");
+                ChatHandler.sendErrorMessage("set pos1 and pos2 first.");
                 return;
             }
             if (isRunning) {
-                sendErrorMessage("export process is already running!");
+                ChatHandler.sendErrorMessage("export process is already running!");
                 return;
             }
 
@@ -139,31 +130,35 @@ public class ExportThread implements Runnable {
                 j++;
                 Main.logger.info("processing material " + facesOfMtl.getKey() + ": " + j + "/" + n);
                 obj.setActiveMaterialGroupName(facesOfMtl.getKey());
-                for (float[][][] face : facesOfMtl.getValue()) {
-                    int[] vertexIndices = new int[4];
-                    int[] uvIndices = new int[4];
-                    for (int i=0; i<4; i++) {
-                        FloatArrayWrapper vertex = new FloatArrayWrapper(face[i][0]);
-                        if (!vertexIdMap.containsKey(vertex)) {
-                            obj.addVertex(face[i][0][0], face[i][0][1], face[i][0][2]);
-                            vertexIdMap.put(vertex, vertexId);
-                            vertexId++;
-                        }
-                        vertexIndices[i] = vertexIdMap.get(vertex);
+                try {
+                    for (float[][][] face : facesOfMtl.getValue()) {
+                        int[] vertexIndices = new int[4];
+                        int[] uvIndices = new int[4];
+                        for (int i = 0; i < 4; i++) {
+                            FloatArrayWrapper vertex = new FloatArrayWrapper(face[i][0]);
+                            if (!vertexIdMap.containsKey(vertex)) {
+                                obj.addVertex(face[i][0][0], face[i][0][1], face[i][0][2]);
+                                vertexIdMap.put(vertex, vertexId);
+                                vertexId++;
+                            }
+                            vertexIndices[i] = vertexIdMap.get(vertex);
 
-                        FloatArrayWrapper uv = new FloatArrayWrapper(face[i][1]);
-                        if (!uvIdMap.containsKey(uv)) {
-                            obj.addTexCoord(face[i][1][0], face[i][1][1]);
-                            uvIdMap.put(uv, uvId);
-                            uvId++;
+                            FloatArrayWrapper uv = new FloatArrayWrapper(face[i][1]);
+                            if (!uvIdMap.containsKey(uv)) {
+                                obj.addTexCoord(face[i][1][0], face[i][1][1]);
+                                uvIdMap.put(uv, uvId);
+                                uvId++;
+                            }
+                            uvIndices[i] = uvIdMap.get(uv);
                         }
-                        uvIndices[i] = uvIdMap.get(uv);
+                        if (vertexIndices[2] == vertexIndices[3]) {
+                            obj.addFace(Arrays.copyOf(vertexIndices, 3), Arrays.copyOf(uvIndices, 3), null);
+                        } else {
+                            obj.addFace(vertexIndices, uvIndices, null);
+                        }
                     }
-                    if (vertexIndices[2] == vertexIndices[3]) {
-                        obj.addFace(Arrays.copyOf(vertexIndices, 3), Arrays.copyOf(uvIndices, 3), null);
-                    } else {
-                        obj.addFace(vertexIndices, uvIndices, null);
-                    }
+                } catch (Throwable e) {
+                    ChatHandler.sendErrorMessage("Error exporting material " + facesOfMtl.getKey() + ". this texture will be ignored.");
                 }
             }
 
@@ -179,8 +174,8 @@ public class ExportThread implements Runnable {
             MtlWriter.write(mtls, mtlOutput);
             mtlOutput.close();
             objOutput.close();
-        } catch (Exception e) {
-            sendErrorMessage("something went wrong! see latest.log");
+        } catch (Throwable e) {
+            ChatHandler.sendErrorMessage("unexpected Error! see: latest.log");
             e.printStackTrace();
             return;
         } finally {
@@ -188,10 +183,10 @@ public class ExportThread implements Runnable {
             unExportedChunks = null;
             exportingChunks = null;
         }
-        sendSuccessMessage("successfully exported.");
+        ChatHandler.sendSuccessMessage("successfully exported.");
 
         long endTime = System.currentTimeMillis();
-        sendSuccessMessage("elapsed " + (endTime-startTime)/1000.0 + "s");
+        ChatHandler.sendSuccessMessage("elapsed " + (endTime-startTime)/1000.0 + "s");
     }
 
     private Map<String, Set<float[][][]>> mergeTextures(Map<Texture, Set<float[][][]>> faces, Set<Mtl> mtls){
@@ -314,20 +309,6 @@ public class ExportThread implements Runnable {
 
     public Set<int[]> getExportingChunks() {
         return exportingChunks;
-    }
-
-    private void sendMessage(TextFormatting tf, String s) {
-        if (this.commandSender != null) {
-            commandSender.sendMessage(new TextComponentString(tf + s));
-        }
-    }
-
-    private void sendErrorMessage(String s) {
-        sendMessage(TextFormatting.RED, s);
-    }
-
-    private void sendSuccessMessage(String s) {
-        sendMessage(TextFormatting.GREEN, s);
     }
 
     private void deleteFile(File f) {
