@@ -159,6 +159,7 @@ public class ExportThread implements Runnable {
                     }
                 } catch (Throwable e) {
                     ChatHandler.sendErrorMessage("Error exporting material " + facesOfMtl.getKey() + ". this texture will be ignored.");
+                    e.printStackTrace();
                 }
             }
 

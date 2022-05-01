@@ -37,6 +37,14 @@ public class TextureHandler {
             images[2] = handler.getTileBufferedImage(rm, method, 2);
             images[3] = handler.getTileBufferedImage(rm, method, 3);
             images[4] = handler.getTileBufferedImage(rm, method, 4);
+
+            //サイズが異なっていたら揃える
+            for (int i=0; i<5; i++) {
+                BufferedImage tile = images[i];
+                if (tile.getWidth() != image.getWidth() || tile.getHeight() != image.getHeight()) {
+                    images[i] = Scalr.resize(tile, Scalr.Method.QUALITY, Scalr.Mode.FIT_EXACT, image.getWidth(), image.getHeight());
+                }
+            }
             if (Arrays.asList(images).contains(null)) return;
 
             int[] indices = handler.getCompactTileIndices(index);
@@ -55,6 +63,7 @@ public class TextureHandler {
             if (newImage.getWidth() != image.getWidth() || newImage.getHeight() != image.getHeight()) {
                 newImage = Scalr.resize(newImage, Scalr.Method.QUALITY, Scalr.Mode.FIT_EXACT, image.getWidth(), image.getHeight());
             }
+            //サイズが異なっていたら揃える
             for (int x = 0; x < image.getWidth(); x++) {
                 for (int y = 0; y < image.getHeight(); y++) {
                     image.setRGB(x, y, newImage.getRGB(x, y));

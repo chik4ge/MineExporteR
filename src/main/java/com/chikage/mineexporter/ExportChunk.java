@@ -59,6 +59,7 @@ public class ExportChunk implements Runnable{
                 }
             } catch (Throwable e) {
                 ChatHandler.sendErrorMessage("Error processing block "+ state + " at " + pos + ". this block will be ignored.");
+                e.printStackTrace();
             }
         }
 
