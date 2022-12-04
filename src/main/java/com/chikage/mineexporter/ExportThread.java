@@ -4,14 +4,23 @@ import com.chikage.mineexporter.utils.*;
 import de.javagl.obj.*;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
+import net.minecraft.util.text.event.HoverEvent;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraftforge.common.ForgeHooks;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -176,7 +185,18 @@ public class ExportThread implements Runnable {
             mtlOutput.close();
             objOutput.close();
         } catch (Throwable e) {
-            ChatHandler.sendErrorMessage("unexpected Error! see: latest.log");
+            ITextComponent errorText = new TextComponentString(TextFormatting.RED + "unexpected error! see: ");
+
+            ITextComponent fileLink = new TextComponentString(TextFormatting.BLUE + "latest.log");
+            fileLink.setStyle(new Style()
+                    .setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, "logs/latest.log"))
+                    .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString("open latest.log")))
+                    .setUnderlined(true)
+                    .setBold(true)
+            );
+
+            ChatHandler.sendMessage(errorText.appendSibling(fileLink));
+
             e.printStackTrace();
             return;
         } finally {
@@ -239,7 +259,7 @@ public class ExportThread implements Runnable {
 
                 if (texture.getTextureType() == Texture.TextureType.CTM) {
                     try {
-                        TextureHandler.setConnectedImage(baseImage, expCtx.rm, expCtx.ctmHandler, texture.getId(), texture.getCTMIndex());
+                        baseImage = TextureHandler.setConnectedImage(baseImage, expCtx.rm, expCtx.ctmHandler, texture.getId(), texture.getCTMIndex());
                     } catch (IOException ioException) {
                         ioException.printStackTrace();
                         continue;
@@ -269,6 +289,7 @@ public class ExportThread implements Runnable {
                         float u = rawFace[j][1][0];
                         float v = rawFace[j][1][1];
 
+                        //TODO アニメーションをmcmetaから判断するように アニメーション適用後のテクスチャで揃えるほうがいいかも
                         int frameCount=texture.getFrameCount();
                         int animationIndex = 0;
                         if (frameCount != -1) {

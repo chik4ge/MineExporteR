@@ -68,11 +68,16 @@ public class CTMHandler {
 
                         InputStream entryInputStream = zipfile.getInputStream(entry);
 
-                        CTMMethod method = createCTMProperty(entryInputStream, directoryPath, propertyName);
+                        try {
+                            CTMMethod method = createCTMProperty(entryInputStream, directoryPath, propertyName);
+                            putMethod(method);
+                        } catch (Exception e) {
+                            Main.logger.error("failed to create CTMProperty: " + name);
+                            e.printStackTrace();
+                        }
 
 //                        locationCache.put(name.split("/")[name.split("/").length-1], method);
 //                        if (method != null) methods.add(method);
-                        putMethod(method);
                         entryInputStream.close();
                     }
                 } catch (IOException e) {
@@ -90,7 +95,7 @@ public class CTMHandler {
         if (method == null) return;
 
         if (propertyForNames.containsKey(method.propertyName)) {
-            Main.logger.error("duplicated method name");
+            Main.logger.error("duplicated method name: " + method.propertyName);
         }
         propertyForNames.put(method.propertyName, method);
 
@@ -110,12 +115,18 @@ public class CTMHandler {
                     blockName = stateName;
                 }
                 Block matchBlock = Block.getBlockFromName(blockName);
-                updateMatchMap(blockMatches, matchBlock, method);
+                if (matchBlock != null) {
+                    updateMatchMap(blockMatches, matchBlock, method);
+                } else {
+//                    TODO conquest:crop_polebeans:age=1のようにstateがしていされている場合の処理
+                    Main.logger.error("failed to get block: " + stateName);
+                }
             }
         }
     }
 
     private <K> void updateMatchMap(Map<K, CTMMethod> ma, K key, CTMMethod me) {
+//        maがkeyを持っている場合は、keyに対応するCTMMethodを取得し、
         if (ma.containsKey(key) && ma.get(key).propertyName.compareTo(me.propertyName) < 0) {
             return;
         }
@@ -170,8 +181,8 @@ public class CTMHandler {
             case "repeat":
                 result = new MethodRepeat(path, propertyName);
 
-                int width = Integer.parseInt(properties.getProperty("width"));
-                int height = Integer.parseInt(properties.getProperty("height"));
+                int width = Integer.parseInt(properties.getProperty("width").trim());
+                int height = Integer.parseInt(properties.getProperty("height").trim());
 
                 ((MethodRepeat) result).width = width;
                 ((MethodRepeat) result).height = height;
@@ -287,7 +298,7 @@ public class CTMHandler {
     private int[] getMetadata(String s) {
         List<Integer> result = new ArrayList<>();
 
-        String[] spaced = s.split(" ");
+        String[] spaced = s.split("[ ]+|[,]+");
         for (String element: spaced) {
             List<String> hyphened = Arrays.asList(element.split("-"));
             if (hyphened.size() == 2) {
