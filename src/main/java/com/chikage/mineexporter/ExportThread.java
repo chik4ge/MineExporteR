@@ -126,7 +126,7 @@ public class ExportThread implements Runnable {
 
             Main.logger.info("finished chunk processing");
 
-//            float配列だとHashCodeが想定通りに動作しないためFloatBufferを使用
+//            Use FloatBuffer because HashCode does not work as expected with a float array.
             HashMap<FloatArrayWrapper, Integer> vertexIdMap = new HashMap<>();
 
             HashMap<FloatArrayWrapper, Integer> uvIdMap = new HashMap<>();

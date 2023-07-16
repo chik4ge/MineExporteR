@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "mineexporter",
+    "name": "MineExporteR",
+    "description": "",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": ["chikage"],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]

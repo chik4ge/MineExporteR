@@ -63,7 +63,7 @@ public class ExportChunk implements Runnable{
             }
         }
 
-//        できる限りスレッドセーフなオブジェクトにはアクセスしないようチャンクごとにまとめて処理
+//        As much as possible, lump objects together in chunks to avoid accessing thread-safe objects.
         for (Map.Entry<Texture, Set<float[][][]>> entry : faces.entrySet()) {
             if (expCtx.faces.containsKey(entry.getKey())) {
                 expCtx.faces.get(entry.getKey()).addAll(entry.getValue());
