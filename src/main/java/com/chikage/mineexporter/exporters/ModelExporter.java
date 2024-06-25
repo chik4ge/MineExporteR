@@ -79,8 +79,8 @@ public class ModelExporter extends BlockExporter{
                     float y = MathHandler.round(Float.intBitsToFloat(vData[index + 1]), 1000000) + offset[1];
                     float z = MathHandler.round(Float.intBitsToFloat(vData[index + 2]), 1000000) + offset[2];
 
-                    float u =    MathHandler.round(quad.getSprite().getUnInterpolatedU(Float.intBitsToFloat(vData[index + 4]))/16, textureWidth);
-                    float v = 1F-MathHandler.round(quad.getSprite().getUnInterpolatedV(Float.intBitsToFloat(vData[index + 5]))/16, textureHeight);
+                    float u =    MathHandler.round(quad.getSprite().getUnInterpolatedU(Float.intBitsToFloat(vData[index + 4]))/16, 1000000);
+                    float v = 1F-MathHandler.round(quad.getSprite().getUnInterpolatedV(Float.intBitsToFloat(vData[index + 5]))/16, 1000000);
 
 //                    if (sprite.hasAnimationMetadata()) {
 //                        int animationIndex = 0;

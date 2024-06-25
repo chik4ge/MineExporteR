@@ -5,6 +5,7 @@ import com.chikage.mineexporter.ctm.method.CTMMethod;
 import com.chikage.mineexporter.ctm.method.MethodCTMCompact;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
+import org.imgscalr.Scalr;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -14,10 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TextureHandler {
@@ -25,7 +23,7 @@ public class TextureHandler {
     private static final Map<ResourceLocation, BufferedImage> texCache = new ConcurrentHashMap<>();
     private static final Set<ResourceLocation> nullTexCache = new HashSet<>();
 
-    public static void setConnectedImage(BufferedImage image, IResourceManager rm, CTMHandler handler, String methodName, int index) throws IOException{
+    public static BufferedImage setConnectedImage(BufferedImage defaultImage, IResourceManager rm, CTMHandler handler, String methodName, int index) throws IOException{
         CTMMethod method = handler.getMethod(methodName);
         if (method == null) throw new IOException("specified method name is not exist: " + methodName);
 
@@ -36,26 +34,51 @@ public class TextureHandler {
             images[2] = handler.getTileBufferedImage(rm, method, 2);
             images[3] = handler.getTileBufferedImage(rm, method, 3);
             images[4] = handler.getTileBufferedImage(rm, method, 4);
-            if (Arrays.asList(images).contains(null)) return;
+
+            //サイズが異なっていたら揃える
+            int maxWidth = Arrays.stream(images)
+                    .max(Comparator.comparing(BufferedImage::getWidth))
+                    .orElseThrow(NoSuchElementException::new)
+                    .getWidth();
+            int maxHeight = Arrays.stream(images)
+                    .max(Comparator.comparing(BufferedImage::getHeight))
+                    .orElseThrow(NoSuchElementException::new)
+                    .getWidth();
+            for (int i=0; i<5; i++) {
+                BufferedImage tile = images[i];
+                if (tile.getWidth() != maxWidth || tile.getHeight() != maxHeight) {
+                    images[i] = Scalr.resize(tile, Scalr.Method.QUALITY, Scalr.Mode.FIT_EXACT, maxWidth, maxHeight);
+                }
+            }
+            if (Arrays.asList(images).contains(null)) return defaultImage;
 
             int[] indices = handler.getCompactTileIndices(index);
 
-            for (int x = 0; x < image.getWidth(); x++) {
-                for (int y = 0; y < image.getHeight(); y++) {
-                    int i = indices[Math.round((float)x/image.getWidth())*2+Math.round((float)y/image.getHeight())];
-                    image.setRGB(x, y, images[i].getRGB(x, y));
+            BufferedImage result = new BufferedImage(maxWidth, maxHeight, defaultImage.getType());
+
+            for (int x = 0; x < maxWidth; x++) {
+                for (int y = 0; y < maxHeight; y++) {
+                    int i = indices[Math.round((float)x/maxWidth)*2+Math.round((float)y/maxHeight)];
+                    result.setRGB(x, y, images[i].getRGB(x, y));
                 }
             }
+
+            return result;
 
         } else {
-            BufferedImage newImage = handler.getTileBufferedImage(rm, method, index);
-            if (newImage == null) return;
+            BufferedImage result = handler.getTileBufferedImage(rm, method, index);
+            if (result == null) return defaultImage;
+            return result;
 
-            for (int x = 0; x < image.getWidth(); x++) {
-                for (int y = 0; y < image.getHeight(); y++) {
-                    image.setRGB(x, y, newImage.getRGB(x, y));
-                }
-            }
+            //サイズが異なっていたら揃える
+//            if (newImage.getWidth() != image.getWidth() || newImage.getHeight() != image.getHeight()) {
+//                newImage = Scalr.resize(newImage, Scalr.Method.QUALITY, Scalr.Mode.FIT_EXACT, image.getWidth(), image.getHeight());
+//            }
+//            for (int x = 0; x < image.getWidth(); x++) {
+//                for (int y = 0; y < image.getHeight(); y++) {
+//                    image.setRGB(x, y, newImage.getRGB(x, y));
+//                }
+//            }
         }
     }
 

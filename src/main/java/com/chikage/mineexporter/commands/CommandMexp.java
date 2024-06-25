@@ -1,6 +1,8 @@
 package com.chikage.mineexporter.commands;
 
+import com.chikage.mineexporter.ChatHandler;
 import com.chikage.mineexporter.Main;
+import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
@@ -10,6 +12,7 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.IClientCommand;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -25,27 +28,30 @@ import static net.minecraft.command.CommandBase.getListOfStringsMatchingLastWord
 
 public class CommandMexp implements IClientCommand {
     List<String> aliases;
-    private String usage = "/mexp pos1 - set current position as pos1\n" +
+    private final String usage = "/mexp pos1 - set current position as pos1\n" +
             "/mexp pos2 - set current position as pos1\n" +
             "/mexp export - export blocks in range";
 
     public CommandMexp() {
         aliases = new ArrayList<>();
         aliases.add("mexp");
-        aliases.add("mineexport");
+        aliases.add("mineexporter");
     }
 
     @Override
+    @Nonnull
     public String getName() {
-        return "mineexport";
+        return "mineexporter";
     }
 
     @Override
+    @Nonnull
     public List<String> getAliases() {
         return aliases;
     }
 
     @Override
+    @Nonnull
     public String getUsage(ICommandSender sender) {
         if (!sender.getEntityWorld().isRemote) {
             return usage;
@@ -55,7 +61,7 @@ public class CommandMexp implements IClientCommand {
     }
 
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+    public void execute(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender, String[] args) {
         if (args.length == 0) {
             sender.sendMessage(new TextComponentString(usage));
             return;
@@ -77,12 +83,13 @@ public class CommandMexp implements IClientCommand {
     }
 
     @Override
-    public boolean checkPermission(MinecraftServer server, ICommandSender sender) {
+    public boolean checkPermission(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender) {
         return true;
     }
 
     @Override
-    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
+    @Nonnull
+    public List<String> getTabCompletions(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
         if (args.length == 1) {
             return getListOfStringsMatchingLastWord(args, "pos1", "pos2", "export");
         } else {
@@ -91,7 +98,7 @@ public class CommandMexp implements IClientCommand {
     }
 
     @Override
-    public boolean isUsernameIndex(String[] args, int index) {
+    public boolean isUsernameIndex(@Nonnull String[] args, int index) {
         return false;
     }
 
@@ -124,7 +131,7 @@ public class CommandMexp implements IClientCommand {
         ExecutorService ex = Executors.newSingleThreadExecutor();
 
         Main.exportThread.setWorld(sender.getEntityWorld());
-        Main.exportThread.setCommandSender(sender);
+        ChatHandler.setCommandSender(sender);
         ex.execute(Main.exportThread);
     }
 
@@ -134,7 +141,7 @@ public class CommandMexp implements IClientCommand {
     }
 
     @Override
-    public int compareTo(ICommand o) {
+    public int compareTo(@Nonnull ICommand o) {
         return 0;
     }
 }

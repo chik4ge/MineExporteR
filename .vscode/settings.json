@@ -1,0 +1,7 @@
+{
+    "java.import.gradle.home": "",
+    "java.import.gradle.java.home": "",
+    "java.import.gradle.wrapper.enabled": true,
+    "gradle.debug": true,
+    "gradle.javaDebug.cleanOutput": false
+}
