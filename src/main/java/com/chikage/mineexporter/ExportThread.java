@@ -13,14 +13,11 @@ import net.minecraft.util.text.event.HoverEvent;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
-import net.minecraftforge.common.ForgeHooks;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -36,7 +33,7 @@ public class ExportThread implements Runnable {
 
     private ExportContext expCtx;
 
-//    private final boolean isCTMSupport = true;
+    //    private final boolean isCTMSupport = true;
 
     public void setWorld(World world) {
         this.world = world;
@@ -58,7 +55,7 @@ public class ExportThread implements Runnable {
         this.pos2 = pos2;
     }
 
-    public void run(){
+    public void run() {
         long startTime = System.currentTimeMillis();
         try {
             if (!isPosSet()) {
@@ -76,7 +73,7 @@ public class ExportThread implements Runnable {
             isRunning = true;
             initChunksData(range.getChunks());
 
-//            delete texture file
+            //            delete texture file
             deleteFile(new File("MineExporteR/textures"));
 
             Map<Texture, Set<float[][][]>> faces = new ConcurrentHashMap<>();
@@ -94,9 +91,9 @@ public class ExportThread implements Runnable {
                     range,
 
                     faces
-                    );
+            );
 
-            IChunkProvider provider = ((World)expCtx.worldIn).getChunkProvider();
+            IChunkProvider provider = ((World) expCtx.worldIn).getChunkProvider();
 
             Main.logger.info("start chunk loading");
 
@@ -126,7 +123,7 @@ public class ExportThread implements Runnable {
 
             Main.logger.info("finished chunk processing");
 
-//            Use FloatBuffer because HashCode does not work as expected with a float array.
+            //            Use FloatBuffer because HashCode does not work as expected with a float array.
             HashMap<FloatArrayWrapper, Integer> vertexIdMap = new HashMap<>();
 
             HashMap<FloatArrayWrapper, Integer> uvIdMap = new HashMap<>();
@@ -207,10 +204,10 @@ public class ExportThread implements Runnable {
         ChatHandler.sendSuccessMessage("successfully exported.");
 
         long endTime = System.currentTimeMillis();
-        ChatHandler.sendSuccessMessage("elapsed " + (endTime-startTime)/1000.0 + "s");
+        ChatHandler.sendSuccessMessage("elapsed " + (endTime - startTime) / 1000.0 + "s");
     }
 
-    private Map<String, Set<float[][][]>> mergeTextures(Map<Texture, Set<float[][][]>> faces, Set<Mtl> mtls){
+    private Map<String, Set<float[][][]>> mergeTextures(Map<Texture, Set<float[][][]>> faces, Set<Mtl> mtls) {
         Map<String, Set<float[][][]>> result = new HashMap<>();
         Map<String, Set<Texture>> texturesForMtl = new HashMap<>();
 
@@ -247,7 +244,7 @@ public class ExportThread implements Runnable {
             int i = 0;
             for (Texture texture : sortedTextures) {
                 ResourceLocation baseLocation = texture.getBaseTexLocation();
-                ResourceLocation location = new ResourceLocation(baseLocation.getNamespace(), "textures/"+ baseLocation.getPath()+".png");
+                ResourceLocation location = new ResourceLocation(baseLocation.getNamespace(), "textures/" + baseLocation.getPath() + ".png");
 
                 BufferedImage baseImage;
                 try {
@@ -270,17 +267,17 @@ public class ExportThread implements Runnable {
                 }
 
                 int column = i % COLUMN_NUM;
-                int row    = i / COLUMN_NUM;
+                int row = i / COLUMN_NUM;
                 if (i == 0) {
                     texWidth = baseImage.getWidth();
                     texHeight = baseImage.getHeight();
-//                    TODO 2のべき乗になるよう調整
-                    mergedWidth = texWidth * (texNum/COLUMN_NUM + 1);
+                    //                    TODO 2のべき乗になるよう調整
+                    mergedWidth = texWidth * (texNum / COLUMN_NUM + 1);
                     mergedHeight = texHeight * (Math.min(texNum, COLUMN_NUM));
 
                     image = new BufferedImage(mergedWidth, mergedHeight, baseImage.getType());
                 }
-                TextureHandler.pasteImage(row*texWidth, column*texHeight, baseImage, image);
+                TextureHandler.pasteImage(row * texWidth, column * texHeight, baseImage, image);
 
                 Set<float[][][]> rawFaces = faces.get(texture);
 
@@ -289,17 +286,17 @@ public class ExportThread implements Runnable {
                         float u = rawFace[j][1][0];
                         float v = rawFace[j][1][1];
 
-                        //TODO アニメーションをmcmetaから判断するように アニメーション適用後のテクスチャで揃えるほうがいいかも
-                        int frameCount=texture.getFrameCount();
+                        // TODO アニメーションをmcmetaから判断するように アニメーション適用後のテクスチャで揃えるほうがいいかも
+                        int frameCount = texture.getFrameCount();
                         int animationIndex = 0;
                         if (frameCount != -1) {
-                            v = MathHandler.round(v * ((animationIndex%frameCount)+1)/frameCount, 1000000);
+                            v = MathHandler.round(v * ((animationIndex % frameCount) + 1) / frameCount, 1000000);
                         }
 
-//                        texwidth = 16 ; u = 1.0 ; mergedWidth = 48 ; row = 0 -> 0.5
-//                        texHeight = 16, v = 1.0, mergedWidrh = 16, column = 0 -> 1.0
-                        rawFace[j][1][0] = MathHandler.round((u + row) * texWidth  / mergedWidth , 1000000);
-                        rawFace[j][1][1] = MathHandler.round(((v-column-1) * texHeight + mergedHeight) / mergedHeight, 1000000);
+                        //                        texwidth = 16 ; u = 1.0 ; mergedWidth = 48 ; row = 0 -> 0.5
+                        //                        texHeight = 16, v = 1.0, mergedWidrh = 16, column = 0 -> 1.0
+                        rawFace[j][1][0] = MathHandler.round((u + row) * texWidth / mergedWidth, 1000000);
+                        rawFace[j][1][1] = MathHandler.round(((v - column - 1) * texHeight + mergedHeight) / mergedHeight, 1000000);
                     }
                 }
 
@@ -339,7 +336,7 @@ public class ExportThread implements Runnable {
         else if (f.isDirectory()) {
             File[] files = f.listFiles();
             assert files != null;
-            for (File cFile: files) {
+            for (File cFile : files) {
                 deleteFile(cFile);
             }
             f.delete();
@@ -351,7 +348,7 @@ public class ExportThread implements Runnable {
 
         long size = expCtx.range.getSize();
         long processed = expCtx.getProcessedBlocks();
-        return (int)(100*processed/size);
+        return (int) (100 * processed / size);
     }
 
     public boolean isPosSet() {
